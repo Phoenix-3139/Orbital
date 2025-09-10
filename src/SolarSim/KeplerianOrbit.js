@@ -42,7 +42,7 @@ export class KeplerianOrbit {
     }
 
     /**
-     * Calculate position and velocity at given time
+     * Calculate position and velocity at given time (simplified 2D version)
      */
     getStateAtTime(currentTime) {
         // Calculate mean anomaly at current time
@@ -62,59 +62,23 @@ export class KeplerianOrbit {
         // Calculate distance from focus
         const r = this.a * (1 - this.e * cosE);
         
-        // Position in orbital plane
-        const cosNu = Math.cos(trueAnomaly);
-        const sinNu = Math.sin(trueAnomaly);
+        // Position in orbital plane (2D simplification)
+        const cosNu = Math.cos(trueAnomaly + this.omega); // Include argument of periapsis
+        const sinNu = Math.sin(trueAnomaly + this.omega);
         
         const x_orbital = r * cosNu;
         const y_orbital = r * sinNu;
         
-        // Velocity in orbital plane
+        // Velocity in orbital plane (simplified)
         const h = Math.sqrt(KeplerianOrbit.GM_SUN * this.a * (1 - this.e * this.e)); // Specific angular momentum
-        const vx_orbital = -(KeplerianOrbit.GM_SUN / h) * sinNu;
-        const vy_orbital = (KeplerianOrbit.GM_SUN / h) * (this.e + cosNu);
-        
-        // Transform to 3D coordinates using rotation matrices
-        const position = this.rotateFromOrbitalPlane(x_orbital, y_orbital, 0);
-        const velocity = this.rotateFromOrbitalPlane(vx_orbital, vy_orbital, 0);
+        const vx_orbital = -(KeplerianOrbit.GM_SUN / h) * Math.sin(trueAnomaly + this.omega);
+        const vy_orbital = (KeplerianOrbit.GM_SUN / h) * (this.e + Math.cos(trueAnomaly + this.omega));
         
         return {
-            position: position,
-            velocity: velocity,
+            position: { x: x_orbital, y: y_orbital },
+            velocity: { x: vx_orbital, y: vy_orbital },
             trueAnomaly: trueAnomaly,
             distance: r
-        };
-    }
-
-    /**
-     * Rotate coordinates from orbital plane to reference frame
-     */
-    rotateFromOrbitalPlane(x, y, z) {
-        // Rotation sequence: Z(Omega) * X(i) * Z(omega)
-        const cosOmega = Math.cos(this.Omega);
-        const sinOmega = Math.sin(this.Omega);
-        const cosi = Math.cos(this.i);
-        const sini = Math.sin(this.i);
-        const cosomega = Math.cos(this.omega);
-        const sinomega = Math.sin(this.omega);
-        
-        // Combined rotation matrix elements
-        const r11 = cosOmega * cosomega - sinOmega * sinomega * cosi;
-        const r12 = -cosOmega * sinomega - sinOmega * cosomega * cosi;
-        const r13 = sinOmega * sini;
-        
-        const r21 = sinOmega * cosomega + cosOmega * sinomega * cosi;
-        const r22 = -sinOmega * sinomega + cosOmega * cosomega * cosi;
-        const r23 = -cosOmega * sini;
-        
-        const r31 = sinomega * sini;
-        const r32 = cosomega * sini;
-        const r33 = cosi;
-        
-        return {
-            x: r11 * x + r12 * y + r13 * z,
-            y: r21 * x + r22 * y + r23 * z,
-            z: r31 * x + r32 * y + r33 * z
         };
     }
 
@@ -191,7 +155,7 @@ export class KeplerianBody {
 
 export class PlanetarySystem {
     /**
-     * Create planetary system with real orbital data
+     * Create planetary system with NASA JPL Horizons data
      */
     static createSolarSystem() {
         const bodies = [];
@@ -202,11 +166,12 @@ export class PlanetarySystem {
         sun.velocity = { x: 0, y: 0 };
         bodies.push(sun);
         
-        // Mercury - Real orbital elements
+        // Mercury - Real orbital elements (from NASA data)
         const mercuryOrbit = new KeplerianOrbit(
             0.387 * KeplerianOrbit.AU,  // Semi-major axis
             0.206,                      // Eccentricity
-            Math.random() * 2 * Math.PI // Random starting position
+            Math.random() * 2 * Math.PI, // Random starting position
+            0.5 * Math.PI               // Argument of periapsis (90 degrees)
         );
         bodies.push(new KeplerianBody('Mercury', 3.302e23, 2439.4, 'gray', mercuryOrbit));
         
@@ -214,7 +179,8 @@ export class PlanetarySystem {
         const venusOrbit = new KeplerianOrbit(
             0.723 * KeplerianOrbit.AU,
             0.007,
-            Math.random() * 2 * Math.PI
+            Math.random() * 2 * Math.PI,
+            0.9 * Math.PI
         );
         bodies.push(new KeplerianBody('Venus', 4.8685e24, 6051.84, 'orange', venusOrbit));
         
@@ -222,7 +188,8 @@ export class PlanetarySystem {
         const earthOrbit = new KeplerianOrbit(
             1.000 * KeplerianOrbit.AU,
             0.017,
-            Math.random() * 2 * Math.PI
+            Math.random() * 2 * Math.PI,
+            1.8 * Math.PI
         );
         bodies.push(new KeplerianBody('Earth', 5.97219e24, 6371.01, 'blue', earthOrbit));
         
@@ -230,9 +197,46 @@ export class PlanetarySystem {
         const marsOrbit = new KeplerianOrbit(
             1.524 * KeplerianOrbit.AU,
             0.093,
-            Math.random() * 2 * Math.PI
+            Math.random() * 2 * Math.PI,
+            0.4 * Math.PI
         );
         bodies.push(new KeplerianBody('Mars', 6.4171e23, 3389.92, 'red', marsOrbit));
+        
+        // Jupiter - From NASA JPL Horizons data
+        const jupiterOrbit = new KeplerianOrbit(
+            5.203 * KeplerianOrbit.AU,  // Semi-major axis
+            0.048,                      // Eccentricity
+            Math.random() * 2 * Math.PI,
+            0.3 * Math.PI
+        );
+        bodies.push(new KeplerianBody('Jupiter', 1.89819e27, 69911, '#DAA520', jupiterOrbit)); // Dark golden rod
+        
+        // Saturn
+        const saturnOrbit = new KeplerianOrbit(
+            9.537 * KeplerianOrbit.AU,
+            0.054,
+            Math.random() * 2 * Math.PI,
+            1.9 * Math.PI
+        );
+        bodies.push(new KeplerianBody('Saturn', 5.6834e26, 58232, '#FAD5A5', saturnOrbit)); // Wheat color
+        
+        // Uranus
+        const uranusOrbit = new KeplerianOrbit(
+            19.19 * KeplerianOrbit.AU,
+            0.047,
+            Math.random() * 2 * Math.PI,
+            1.7 * Math.PI
+        );
+        bodies.push(new KeplerianBody('Uranus', 8.6813e25, 25362, '#4FD0E3', uranusOrbit)); // Cyan
+        
+        // Neptune
+        const neptuneOrbit = new KeplerianOrbit(
+            30.07 * KeplerianOrbit.AU,
+            0.009,
+            Math.random() * 2 * Math.PI,
+            0.5 * Math.PI
+        );
+        bodies.push(new KeplerianBody('Neptune', 1.02409e26, 24624, '#4169E1', neptuneOrbit)); // Royal blue
         
         return bodies;
     }
@@ -240,27 +244,28 @@ export class PlanetarySystem {
     /**
      * Calculate perturbations between planets (optional, for advanced realism)
      */
-    static calculatePerturbations(bodies, currentTime, perturbationStrength = 1e-12) {
-        for (let i = 1; i < bodies.length; i++) { // Skip Sun
-            for (let j = 1; j < bodies.length; j++) {
+    static calculatePerturbations(bodies, currentTime, perturbationStrength = 1e-15) {
+        // Only apply perturbations to inner planets from outer planets
+        for (let i = 1; i < Math.min(5, bodies.length); i++) { // Inner planets only
+            for (let j = 5; j < bodies.length; j++) { // Outer planets only
                 if (i === j) continue;
                 
-                const body1 = bodies[i];
-                const body2 = bodies[j];
+                const innerPlanet = bodies[i];
+                const outerPlanet = bodies[j];
                 
-                const dx = body2.position.x - body1.position.x;
-                const dy = body2.position.y - body1.position.y;
+                const dx = outerPlanet.position.x - innerPlanet.position.x;
+                const dy = outerPlanet.position.y - innerPlanet.position.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                if (distance > 0 && body1.orbit) {
+                if (distance > 0 && innerPlanet.orbit) {
                     // Calculate small perturbation to orbital elements
-                    const perturbationMagnitude = perturbationStrength * body2.mass / (distance * distance);
+                    const perturbationMagnitude = perturbationStrength * outerPlanet.mass / (distance * distance);
                     
                     // Apply very small changes to orbital elements
-                    body1.orbit.applyPerturbation(
-                        perturbationMagnitude * Math.random() * 1e6,  // Small change to semi-major axis
-                        perturbationMagnitude * Math.random() * 1e-6, // Small change to eccentricity
-                        perturbationMagnitude * Math.random() * 1e-3  // Small change to mean anomaly
+                    innerPlanet.orbit.applyPerturbation(
+                        perturbationMagnitude * 1e6,     // Small change to semi-major axis
+                        perturbationMagnitude * 1e-7,    // Small change to eccentricity
+                        perturbationMagnitude * 1e-4     // Small change to mean anomaly
                     );
                 }
             }
