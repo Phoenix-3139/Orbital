@@ -8,6 +8,7 @@ export class Drawer extends Component {
     material: Property.material(),
     bgColor: Property.string('#111214'),
     paused: Property.bool(false),
+    timeMultiplier: Property.float(100000), // Expose timeMultiplier in the editor
   };
 
   // Global scaling factor for positions
@@ -29,8 +30,11 @@ export class Drawer extends Component {
   update(dt) {
     if (this.paused) return;
 
+    // Multiply the delta time by the time multiplier
+    const scaledDt = dt * this.timeMultiplier;
+
     // Simulate gravity and update positions
-    this._simulateGravity(dt);
+    this._simulateGravity(scaledDt);
 
     // Draw dynamic elements
     this._drawDynamic();
@@ -92,7 +96,7 @@ export class Drawer extends Component {
     // Draw each body
     this.bodies.forEach((body) => {
       const position = body.getPosition();
-      const radius = Math.log10(body.mass) * 2; // Scale radius based on mass
+      const radius = Math.log10(body.mass) * 0.5; // Scale radius down further
 
       g.beginPath();
       g.arc(
@@ -117,8 +121,6 @@ export class Drawer extends Component {
   }
 
   _simulateGravity(dt) {
-    const physics = new PhysicsCalculator();
-
     // Get the Sun and Earth
     const sun = this.bodies.find((body) => body.name === 'Sun');
     const earth = this.bodies.find((body) => body.name === 'Earth');
@@ -134,10 +136,10 @@ export class Drawer extends Component {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     // Calculate the gravitational force
-    const force = physics.calculateGravForces(sun.mass, earth.mass, distance);
+    const force = PhysicsCalculator.calculateGravForces(sun.mass, earth.mass, distance);
 
     // Calculate the acceleration on Earth
-    const acceleration = physics.calculateGravAcceleration(force, earth.mass);
+    const acceleration = PhysicsCalculator.calculateGravAcceleration(force, earth.mass);
     const ax = (-dx / distance) * acceleration;
     const ay = (-dy / distance) * acceleration;
 
