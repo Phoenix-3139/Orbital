@@ -180,7 +180,11 @@ export class Drawer extends Component {
         g.textAlign = 'left';
         g.fillText(`Time Multiplier: ${this.timeMultiplier.toFixed(0)}x`, 10, 20);
         g.fillText(`Scale: 1 px = ${(1/this.scalingFactor/1e9).toFixed(1)} Gm`, 10, 35);
-        g.fillText('NASA JPL Horizons Data (2025-Sep-08)', 10, 50);
+        g.fillText('Dormand-Prince RK45 Adaptive Integration', 10, 50);
+        if (this.lastTimeStep) {
+            g.fillText(`Adaptive Step: ${(this.lastTimeStep).toFixed(6)}s`, 10, 65);
+        }
+        g.fillText('NASA JPL Horizons Data (2025-Sep-08)', 10, 80);
     }
 
     _simulateGravity(dt) {
