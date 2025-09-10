@@ -1,6 +1,5 @@
 import {Component, Property} from '@wonderlandengine/api';
-import {Body} from './body.js';
-import {PhysicsCalculator} from './PhysicsCalculator.js';
+import {PlanetarySystem, KeplerianBody} from './KeplerianOrbit.js';
 
 export class Drawer extends Component {
     static TypeName = 'orbital-simulation';
@@ -8,13 +7,14 @@ export class Drawer extends Component {
         material: Property.material(),
         bgColor: Property.string('#0a0a0a'),
         paused: Property.bool(false),
-        timeMultiplier: Property.float(500000), // Increased for better visualization
+        timeMultiplier: Property.float(1000000), // Much higher multiplier for Keplerian orbits
         showOrbits: Property.bool(true),
-        maxTrailLength: Property.int(2000),
+        maxTrailLength: Property.int(3000),
+        enablePerturbations: Property.bool(false), // Optional planet-planet interactions
     };
 
-    // Global scaling factor for positions (adjusted for full solar system)
-    scalingFactor = 3e-10; // Smaller scale to fit all planets
+    // Global scaling factor for positions
+    scalingFactor = 4e-10; // Adjusted for Keplerian orbits
 
     start() {
         // Initialize canvas and material
@@ -55,8 +55,16 @@ export class Drawer extends Component {
         // Multiply the delta time by the time multiplier
         const scaledDt = dt * this.timeMultiplier;
 
-        // Simulate gravity and update positions
-        this._simulateGravity(scaledDt);
+        // Update simulation time
+        this.simulationTime += scaledDt;
+
+        // Update planetary positions using Keplerian orbits
+        this._updateKeplerianOrbits();
+
+        // Optionally calculate perturbations
+        if (this.enablePerturbations) {
+            this._calculatePerturbations();
+        }
 
         // Draw dynamic elements
         this._drawDynamic();
@@ -66,20 +74,39 @@ export class Drawer extends Component {
     }
 
     _initState() {
-        // Initialize time and bodies
-        this._t = 0;
-        this.bodies = [];
-
-        // Create all planets using the new NASA JPL Horizons data
-        const planets = ['sun', 'mercury', 'venus', 'earth', 'mars'];
+        // Initialize time and bodies using Keplerian orbital system
+        this.simulationTime = 0;
+        this.bodies = PlanetarySystem.createSolarSystem();
         
-        planets.forEach(planetKey => {
-            const body = new Body(planetKey);
-            this.bodies.push(body);
-        });
+        // Initialize positions at time 0
+        this._updateKeplerianOrbits();
 
-        console.log('Initialized solar system with NASA JPL Horizons data');
-        console.log('Bodies:', this.bodies.map(b => `${b.name}: mass=${b.mass}, pos=(${(b.position.x/1e9).toFixed(2)}, ${(b.position.y/1e9).toFixed(2)}) Gm`));
+        console.log('Initialized Keplerian Solar System');
+        this.bodies.forEach(body => {
+            if (body.orbit) {
+                const period = body.orbit.getOrbitalPeriod();
+                const periodDays = period / 86400;
+                console.log(`${body.name}: Period = ${periodDays.toFixed(1)} days, ` +
+                           `Semi-major axis = ${(body.orbit.a / 1.496e11).toFixed(3)} AU, ` +
+                           `Eccentricity = ${body.orbit.e.toFixed(3)}`);
+            }
+        });
+    }
+
+    _updateKeplerianOrbits() {
+        // Update each planet's position based on current simulation time
+        this.bodies.forEach(body => {
+            body.updatePosition(this.simulationTime);
+            body.addToTrail(this.maxTrailLength);
+        });
+    }
+
+    _calculatePerturbations() {
+        // Calculate gravitational perturbations between planets
+        // This is called much less frequently than position updates
+        if (this.simulationTime % 86400 < this.timeMultiplier / 60) { // Once per simulated day
+            PlanetarySystem.calculatePerturbations(this.bodies, this.simulationTime);
+        }
     }
 
     _redrawStatic() {
@@ -91,7 +118,7 @@ export class Drawer extends Component {
         g.fillStyle = this.bgColor;
         g.fillRect(0, 0, w, h);
 
-        // Draw subtle grid lines
+        // Draw subtle grid lines and orbital reference circles
         g.strokeStyle = 'rgba(255, 255, 255, 0.1)';
         g.lineWidth = 1;
         g.beginPath();
@@ -103,8 +130,8 @@ export class Drawer extends Component {
         g.lineTo(w, h / 2);
         
         // Orbital reference circles (AU distances)
-        const auInPixels = Body.AU_TO_METERS * this.scalingFactor;
-        for (let au = 1; au <= 3; au++) {
+        const auInPixels = 1.496e11 * this.scalingFactor; // 1 AU in pixels
+        for (let au = 0.5; au <= 2; au += 0.5) {
             g.beginPath();
             g.arc(w / 2, h / 2, au * auInPixels, 0, 2 * Math.PI);
             g.stroke();
@@ -172,6 +199,12 @@ export class Drawer extends Component {
             g.font = '10px Arial';
             g.textAlign = 'center';
             g.fillText(body.name, displayX, displayY - radius - 5);
+            
+            // Draw orbital information for planets
+            if (body.orbit && body.trueAnomaly !== undefined) {
+                g.font = '8px Arial';
+                g.fillText(`${(body.distance / 1.496e11).toFixed(2)} AU`, displayX, displayY + radius + 10);
+            }
         });
 
         // Draw simulation info
@@ -180,54 +213,20 @@ export class Drawer extends Component {
         g.textAlign = 'left';
         g.fillText(`Time Multiplier: ${this.timeMultiplier.toFixed(0)}x`, 10, 20);
         g.fillText(`Scale: 1 px = ${(1/this.scalingFactor/1e9).toFixed(1)} Gm`, 10, 35);
-        g.fillText('Dormand-Prince RK45 Adaptive Integration', 10, 50);
-        if (this.lastTimeStep) {
-            g.fillText(`Adaptive Step: ${(this.lastTimeStep).toFixed(6)}s`, 10, 65);
+        g.fillText('Keplerian Orbital Mechanics', 10, 50);
+        g.fillText('Perfect Energy Conservation', 10, 65);
+        
+        // Display simulation time
+        const simDays = this.simulationTime / 86400;
+        const simYears = simDays / 365.25;
+        if (simYears > 1) {
+            g.fillText(`Simulation Time: ${simYears.toFixed(2)} years`, 10, 80);
+        } else {
+            g.fillText(`Simulation Time: ${simDays.toFixed(1)} days`, 10, 80);
         }
-        g.fillText('NASA JPL Horizons Data (2025-Sep-08)', 10, 80);
-    }
-
-    _simulateGravity(dt) {
-        // Calculate gravitational forces between all bodies
-        for (let i = 0; i < this.bodies.length; i++) {
-            const body = this.bodies[i];
-            let totalAcceleration = { x: 0, y: 0 };
-
-            // Calculate acceleration due to all other bodies
-            for (let j = 0; j < this.bodies.length; j++) {
-                if (i === j) continue; // Skip self
-
-                const otherBody = this.bodies[j];
-                const dx = otherBody.position.x - body.position.x;
-                const dy = otherBody.position.y - body.position.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance === 0) continue; // Avoid division by zero
-
-                // Calculate gravitational force
-                const force = PhysicsCalculator.calculateGravForces(body.mass, otherBody.mass, distance);
-                const acceleration = force / body.mass;
-
-                // Add to total acceleration
-                totalAcceleration.x += (dx / distance) * acceleration;
-                totalAcceleration.y += (dy / distance) * acceleration;
-            }
-
-            // Update body's position and velocity using Verlet integration
-            PhysicsCalculator.verletIntegration(body, dt, totalAcceleration);
-
-            // Add the current position to the body's trail (except for Sun)
-            if (body.trail !== null) {
-                body.trail.push({ 
-                    x: body.getPosition().x, 
-                    y: body.getPosition().y 
-                });
-
-                // Limit the trail length to avoid memory issues
-                if (body.trail.length > this.maxTrailLength) {
-                    body.trail.shift();
-                }
-            }
+        
+        if (this.enablePerturbations) {
+            g.fillText('Perturbations: ON', 10, 95);
         }
     }
 }
