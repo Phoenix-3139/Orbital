@@ -1,361 +1,650 @@
+/**
+ * Orbital Simulation Display Component
+ * 
+ * This is the main rendering component for the solar system simulation.
+ * It handles:
+ * - Canvas creation and management
+ * - Real-time orbital mechanics visualization
+ * - Multiple camera modes (Solar System, Inner Planets, Planet)
+ * - Dynamic scaling and coordinate transformations
+ * - UI rendering and user feedback
+ * 
+ * The component uses a Universal Coordinate System to handle the vast
+ * scale differences between planetary and solar system views.
+ */
+
+// Import required Wonderland Engine components and simulation classes
 import {Component, Property} from '@wonderlandengine/api';
 import {PlanetarySystem, KeplerianBody} from './KeplerianOrbit.js';
+import {UniversalCoordinateSystem} from './CoordinateSystem.js';
 
+/**
+ * Main Display Component Class
+ * Extends Wonderland Engine's Component class to integrate with the engine
+ */
 export class Drawer extends Component {
+    // Component identifier for Wonderland Engine
     static TypeName = 'orbital-simulation';
+    
+    /**
+     * Component Properties - Exposed to Wonderland Engine Editor
+     * These properties can be adjusted in the editor without code changes
+     */
     static Properties = {
-        material: Property.material(),
-        bgColor: Property.string('#0a0a0a'),
-        paused: Property.bool(false),
-        timeMultiplier: Property.float(2000000), // Higher multiplier for outer planets
-        showOrbits: Property.bool(true),
-        maxTrailLength: Property.int(4000),
-        enablePerturbations: Property.bool(false),
-        showOuterPlanets: Property.bool(true), // Toggle for outer planets visibility
-        autoScale: Property.bool(true), // Automatically adjust scale based on visible planets
-        useRealScale: Property.bool(true), // Use true real-life scale for planets
-        sunSizeMultiplier: Property.float(1.0), // Multiplier for sun size (for visibility)
-        planetSizeMultiplier: Property.float(1.0), // Multiplier for planet sizes (for visibility)
-        minPlanetPixels: Property.float(1.0), // Minimum size in pixels for planets
+        // Rendering Properties
+        material: Property.material(),              // Material to apply the canvas texture to
+        bgColor: Property.string('#0a0a0a'),      // Background color (dark space)
+        
+        // Simulation Control Properties
+        paused: Property.bool(false),              // Whether simulation is paused
+        timeMultiplier: Property.float(2000000),   // Time acceleration factor (2M = fast orbit visualization)
+        
+        // Visual Display Properties
+        showOrbits: Property.bool(true),           // Whether to show orbital trails
+        maxTrailLength: Property.int(4000),        // Maximum number of trail points per body
+        enablePerturbations: Property.bool(false), // Enable gravitational perturbations (unused)
+        showOuterPlanets: Property.bool(true),     // Show planets beyond Jupiter
+        useRealScale: Property.bool(true),         // Use physically accurate scaling
+        
+        // Camera Mode Controls (Exposed to Editor)
+        cameraMode: Property.int(1),               // 1=Solar System, 2=Inner Planets, 3=Planet
+        targetPlanet: Property.string('Earth'),    // Planet to focus on in planet mode
+        enableCameraSmoothing: Property.bool(false), // Smooth camera following (disabled to prevent bouncing)
+        manualZoom: Property.float(1.0),           // Manual zoom adjustment factor
+        
+        // Manual Scaling Override Properties (Advanced Users)
+        overridePlanetScaling: Property.bool(false),    // Enable manual planet size control
+        manualSunMultiplier: Property.float(0.1),       // Manual sun size multiplier
+        manualPlanetMultiplier: Property.float(50.0),   // Manual planet size multiplier
+        
+        // Minimum Display Properties
+        minPlanetPixels: Property.float(2.0),      // Minimum planet size in pixels for visibility
     };
 
-    // Global scaling factor for positions (will be dynamic)
-    scalingFactor = 2e-11; // Much smaller for full solar system
-
+    /**
+     * Component Initialization Method
+     * Called when the component starts - sets up canvas, textures, and coordinate system
+     */
     start() {
-        // Initialize canvas and material
+        // Create HTML5 Canvas for rendering the simulation
         this.canvas = document.createElement('canvas');
-        this.canvas.width = 1024;
-        this.canvas.height = 1024;
-        this.ctx = this.canvas.getContext('2d');
+        this.canvas.width = 1024;   // Canvas width in pixels
+        this.canvas.height = 1024;  // Canvas height in pixels
+        this.ctx = this.canvas.getContext('2d'); // Get 2D rendering context
+        
+        // Initialize canvas with background color before creating texture
+        // This prevents flashing white before first frame renders
+        this.ctx.fillStyle = this.bgColor;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Create Wonderland Engine texture from canvas
+        // This texture will be applied to the material to display the simulation
         this.tex = this.engine.textures.create(this.canvas);
         
-        // Check if material is properly assigned
+        // Initialize Universal Coordinate System
+        // This handles all coordinate transformations between world space and screen space
+        this.coordSystem = new UniversalCoordinateSystem(
+            this.canvas.width,   // Canvas width for coordinate calculations
+            this.canvas.height   // Canvas height for coordinate calculations
+        );
+        
+        // Apply texture to material if material is assigned
         if (this.material) {
-            this.material.flatTexture = this.tex;
+            this.material.flatTexture = this.tex; // Set canvas texture as material's main texture
         } else {
+            // Error handling - component won't work without material
             console.error('Material not assigned to orbital-simulation component');
             return;
         }
 
+        // Initialize simulation state (planets, orbits, camera)
         this._initState();
-        this._redrawStatic();
-
-        // Start the simulation loop
-        this._startSimulationLoop();
+        
+        // Start simulation loop after one frame delay
+        // This ensures texture is properly initialized before rendering begins
+        setTimeout(() => {
+            this._startSimulationLoop();
+        }, 16); // 16ms = one frame at 60fps
     }
 
+    /**
+     * Simulation Loop Initialization
+     * Sets up interval-based rendering to ensure consistent frame rate
+     */
     _startSimulationLoop() {
-        // Use setInterval to ensure the simulation continues even when the tab is inactive
-        const interval = 16; // ~60 FPS (1000ms / 60)
+        // Use setInterval instead of requestAnimationFrame to ensure simulation
+        // continues even when browser tab is inactive
+        const interval = 16; // Target 60 FPS (1000ms / 60 ≈ 16ms)
+        
         this.simulationInterval = setInterval(() => {
-            if (!this.paused) {
-                this.update(interval / 1000); // Convert interval to seconds
+            if (!this.paused) { // Only update if not paused
+                this.update(interval / 1000); // Convert milliseconds to seconds for physics
             }
         }, interval);
     }
 
+    /**
+     * Component Cleanup Method
+     * Called when component is deactivated - prevents memory leaks
+     */
     onDeactivate() {
-        // Clear the simulation interval when the component is deactivated
+        // Clear the simulation interval to prevent continued execution
         if (this.simulationInterval) {
             clearInterval(this.simulationInterval);
         }
     }
 
-    update(dt) {
-        if (this.paused) return;
-
-        // Multiply the delta time by the time multiplier
-        const scaledDt = dt * this.timeMultiplier;
-
-        // Update simulation time
-        this.simulationTime += scaledDt;
-
-        // Update planetary positions using Keplerian orbits
+    /**
+     * Initialize Simulation State
+     * Sets up solar system, camera mode, and initial conditions
+     */
+    _initState() {
+        // Initialize simulation time (seconds since simulation start)
+        this.simulationTime = 0;
+        
+        // Create solar system with all planets using Keplerian orbital mechanics
+        this.bodies = PlanetarySystem.createSolarSystem();
+        
+        // Update all planetary positions to initial time
         this._updateKeplerianOrbits();
 
-        // Optionally calculate perturbations
-        if (this.enablePerturbations) {
-            this._calculatePerturbations();
+        // Initialize camera system based on editor properties
+        let targetPlanet = null;
+        
+        // If in planet mode (3) and target planet is specified
+        if (this.cameraMode === 3 && this.targetPlanet) {
+            // Find the target planet in the bodies array
+            targetPlanet = this.bodies.find(body => 
+                body.name.toLowerCase() === this.targetPlanet.toLowerCase()
+            );
+            
+            // Warn if target planet not found
+            if (!targetPlanet) {
+                console.warn(`Target planet "${this.targetPlanet}" not found. Available planets:`, 
+                    this.bodies.map(b => b.name).join(', '));
+            }
+        }
+        
+        // Set camera mode using editor property (1, 2, or 3)
+        this.coordSystem.setCameraModeByNumber(this.cameraMode, targetPlanet);
+        
+        // Configure camera smoothing based on editor setting
+        this.coordSystem.smoothTransitions = this.enableCameraSmoothing;
+        
+        // Apply manual scaling overrides if enabled in editor
+        if (this.overridePlanetScaling) {
+            this._applyManualScaling();
+        }
+        
+        // Apply manual zoom adjustment if specified
+        if (this.manualZoom !== 1.0) {
+            this.coordSystem.zoom(this.manualZoom);
         }
 
-        // Auto-adjust scale if enabled
-        if (this.autoScale) {
-            this._adjustScale();
-        }
+        // Log initialization status for debugging
+        console.log('Camera System initialized');
+        console.log(`Mode: ${this.cameraMode} (${this.coordSystem.cameraMode})`);
+        console.log(`Scale: ${this.coordSystem.getScaleDescription()}`);
+    }
 
-        // Draw dynamic elements
+    /**
+     * Apply Manual Scaling Overrides
+     * Allows advanced users to override automatic planet scaling
+     */
+    _applyManualScaling() {
+        // Get current camera mode name
+        const currentMode = this.coordSystem.cameraMode;
+        
+        // Override the automatic scaling with manual values
+        this.coordSystem.planetSizeMultipliers[currentMode] = {
+            sunMultiplier: this.manualSunMultiplier,        // Use editor sun multiplier
+            planetMultiplier: this.manualPlanetMultiplier,  // Use editor planet multiplier
+            minPixelSize: this.minPlanetPixels              // Use editor minimum size
+        };
+        
+        // Log manual scaling application
+        console.log(`Manual scaling applied - Sun: ${this.manualSunMultiplier}x, Planets: ${this.manualPlanetMultiplier}x`);
+    }
+
+    /**
+     * Main Update Loop
+     * Called every frame to advance simulation and render
+     * 
+     * @param {number} dt - Delta time in seconds since last frame
+     */
+    update(dt) {
+        // Skip update if simulation is paused
+        if (this.paused) return;
+
+        // Scale delta time by time multiplier for faster/slower simulation
+        const scaledDt = dt * this.timeMultiplier;
+        
+        // Advance simulation time
+        this.simulationTime += scaledDt;
+
+        // Update all planetary positions based on new time
+        this._updateKeplerianOrbits();
+        
+        // Update camera position and mode
+        this._updateCamera();
+        
+        // Render everything to canvas
         this._drawDynamic();
-
-        // Update the texture
+        
+        // Update Wonderland Engine texture with new canvas content
         this.tex.update();
     }
 
-    _initState() {
-        // Initialize time and bodies using Keplerian orbital system
-        this.simulationTime = 0;
-        this.bodies = PlanetarySystem.createSolarSystem();
-        
-        // Initialize positions at time 0
-        this._updateKeplerianOrbits();
-
-        console.log('Initialized Complete Solar System with NASA JPL Horizons data');
-        this.bodies.forEach(body => {
-            if (body.orbit) {
-                const period = body.orbit.getOrbitalPeriod();
-                const periodDays = period / 86400;
-                const periodYears = periodDays / 365.25;
-                console.log(`${body.name}: Period = ${periodYears.toFixed(2)} years (${periodDays.toFixed(0)} days), ` +
-                           `Semi-major axis = ${(body.orbit.a / 1.496e11).toFixed(3)} AU, ` +
-                           `Eccentricity = ${body.orbit.e.toFixed(3)}, ` +
-                           `Radius = ${body.radius} km`);
-            }
-        });
-    }
-
+    /**
+     * Update Keplerian Orbital Positions
+     * Calculates new positions for all celestial bodies based on current simulation time
+     */
     _updateKeplerianOrbits() {
-        // Update each planet's position based on current simulation time
+        // Update each celestial body in the simulation
         this.bodies.forEach(body => {
+            // Calculate new position based on orbital mechanics and current time
             body.updatePosition(this.simulationTime);
+            
+            // Add current position to orbital trail for visualization
             body.addToTrail(this.maxTrailLength);
         });
     }
 
-    _calculatePerturbations() {
-        // Calculate gravitational perturbations between planets
-        if (this.simulationTime % 86400 < this.timeMultiplier / 60) { // Once per simulated day
-            PlanetarySystem.calculatePerturbations(this.bodies, this.simulationTime);
-        }
-    }
-
-    _adjustScale() {
-        // Automatically adjust scale to show relevant planets
-        const visibleBodies = this.showOuterPlanets ? this.bodies : this.bodies.slice(0, 5);
-        let maxDistance = 0;
-        
-        visibleBodies.forEach(body => {
-            if (body.orbit) {
-                const distance = Math.sqrt(body.position.x**2 + body.position.y**2);
-                maxDistance = Math.max(maxDistance, distance);
+    /**
+     * Update Camera System
+     * Handles camera mode changes and position updates
+     */
+    _updateCamera() {
+        // Check if camera mode changed in editor during runtime
+        if (this.coordSystem.cameraMode !== this._getCurrentModeString()) {
+            let targetPlanet = null;
+            
+            // If switching to planet mode, find target planet
+            if (this.cameraMode === 3 && this.targetPlanet) {
+                targetPlanet = this.bodies.find(body => 
+                    body.name.toLowerCase() === this.targetPlanet.toLowerCase()
+                );
             }
-        });
-        
-        if (maxDistance > 0) {
-            // Scale to fit 80% of canvas
-            const targetPixels = Math.min(this.canvas.width, this.canvas.height) * 0.4;
-            this.scalingFactor = targetPixels / maxDistance;
+            
+            // Apply new camera mode
+            this.coordSystem.setCameraModeByNumber(this.cameraMode, targetPlanet);
+            
+            // Reapply manual scaling if it was enabled
+            if (this.overridePlanetScaling) {
+                this._applyManualScaling();
+            }
+        }
+
+        // Apply manual scaling updates in real-time if enabled
+        // This allows live adjustment of scaling in editor
+        if (this.overridePlanetScaling) {
+            this._applyManualScaling();
+        }
+
+        // Update camera position if following a planet in planet mode
+        if (this.cameraMode === 3 && this.targetPlanet) {
+            // Find the target planet object
+            const target = this.bodies.find(body => 
+                body.name.toLowerCase() === this.targetPlanet.toLowerCase()
+            );
+            
+            if (target) {
+                // Set target and update camera to follow it
+                this.coordSystem.targetPlanet = target;
+                this.coordSystem.updateCamera();
+            }
         }
     }
 
     /**
-     * Calculate real-life scale radius in pixels
+     * Get Current Camera Mode as String
+     * Converts numeric camera mode to string for comparison
+     * 
+     * @returns {string} Camera mode name ('SOLAR_SYSTEM', 'INNER_PLANETS', 'PLANET')
      */
-    _getRealScaleRadius(body) {
-        if (!this.useRealScale) {
-            // Fallback to original logarithmic scaling
-            return body.getDisplayRadius();
-        }
-
-        // Convert radius from km to meters, then to pixels using current scaling factor
-        const radiusInMeters = body.radius * 1000; // km to meters
-        let radiusInPixels = radiusInMeters * this.scalingFactor;
-
-        // Apply size multipliers
-        if (body.name === 'Sun') {
-            radiusInPixels *= this.sunSizeMultiplier;
-        } else {
-            radiusInPixels *= this.planetSizeMultiplier;
-        }
-
-        // Ensure minimum visibility
-        return Math.max(this.minPlanetPixels, radiusInPixels);
+    _getCurrentModeString() {
+        // Map numbers to mode strings
+        const modes = {
+            1: 'SOLAR_SYSTEM',   // Full solar system view
+            2: 'INNER_PLANETS',  // Inner planets focus
+            3: 'PLANET'          // Individual planet view
+        };
+        return modes[this.cameraMode];
     }
 
-    _redrawStatic() {
-        const g = this.ctx;
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+    /**
+     * Calculate Display Radius for Celestial Body
+     * Determines how large to draw a planet/sun on screen based on camera mode and scaling
+     * 
+     * @param {object} body - Celestial body object (planet or sun)
+     * @returns {number} Radius in pixels for rendering
+     */
+    _calculateDisplayRadius(body) {
+        // If not using real scale, fall back to logarithmic scaling
+        if (!this.useRealScale) {
+            return body.getDisplayRadius(); // Use body's built-in display scaling
+        }
 
-        // Draw background
+        // Get world radius in meters
+        let worldRadius;
+        if (typeof body.getWorldRadius === 'function') {
+            // Body has getWorldRadius method - use it (preferred)
+            worldRadius = body.getWorldRadius(); // Already in meters
+        } else if (body.radius) {
+            // Body has radius property - assume it's in kilometers and convert
+            worldRadius = body.radius * 1000; // Convert km to meters
+        } else {
+            // No radius information available - use minimum size
+            console.warn(`Body ${body.name} has no radius information, using default`);
+            return this.minPlanetPixels;
+        }
+
+        // Convert world radius to screen pixels using current scale
+        const screenRadius = worldRadius / this.coordSystem.metersPerPixel;
+
+        // Ensure minimum visibility - never smaller than minimum pixel size
+        return Math.max(this.minPlanetPixels, screenRadius);
+    }
+
+    /**
+     * Main Rendering Method
+     * Draws the entire simulation frame including planets, orbits, grid, and UI
+     */
+    _drawDynamic() {
+        // Get canvas context and dimensions for rendering
+        const g = this.ctx;           // 2D rendering context
+        const w = this.canvas.width;  // Canvas width
+        const h = this.canvas.height; // Canvas height
+
+        // Clear canvas with background color
         g.fillStyle = this.bgColor;
         g.fillRect(0, 0, w, h);
 
-        // Draw subtle grid lines and orbital reference circles
-        g.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        g.lineWidth = 1;
+        // Draw reference grid for spatial orientation
+        this._drawReferenceGrid();
+
+        // Determine which bodies to render based on camera mode and settings
+        let visibleBodies;
+        if (this.cameraMode === 2) {
+            // Inner planets mode - use coordinate system's planet filter
+            visibleBodies = this.coordSystem.getVisiblePlanets(this.bodies);
+        } else {
+            // Solar system or planet mode - use showOuterPlanets editor setting
+            visibleBodies = this.showOuterPlanets ? this.bodies : this.bodies.slice(0, 5);
+        }
+
+        // Render each visible celestial body
+        visibleBodies.forEach((body) => {
+            this._drawBody(body);           // Draw the planet/sun itself
+            if (this.showOrbits) {          // Draw orbital trail if enabled
+                this._drawTrail(body);
+            }
+        });
+
+        // Draw user interface information overlay
+        this._drawUI();
+    }
+
+    /**
+     * Draw Individual Celestial Body
+     * Renders a single planet or sun with proper scaling and labeling
+     * 
+     * @param {object} body - Celestial body to draw
+     */
+    _drawBody(body) {
+        const g = this.ctx; // Get rendering context
+        
+        // Convert world position to screen coordinates
+        const screenPos = this.coordSystem.worldToScreen(body.position.x, body.position.y);
+        
+        // Skip rendering if body is off-screen (performance optimization)
+        const margin = 50; // Extra margin around screen edges
+        if (screenPos.x < -margin || screenPos.x > this.canvas.width + margin ||
+            screenPos.y < -margin || screenPos.y > this.canvas.height + margin) {
+            return; // Body is not visible, skip rendering
+        }
+
+        // Calculate display radius based on camera mode and scaling
+        const radius = this._calculateDisplayRadius(body);
+
+        // Draw the celestial body as a filled circle
         g.beginPath();
-        
-        // Center cross
-        g.moveTo(w / 2, 0);
-        g.lineTo(w / 2, h);
-        g.moveTo(0, h / 2);
-        g.lineTo(w, h / 2);
-        
-        // Orbital reference circles (AU distances)
-        const auInPixels = 1.496e11 * this.scalingFactor;
-        const maxAU = this.showOuterPlanets ? 35 : 5;
-        
-        for (let au = 1; au <= maxAU; au += this.showOuterPlanets ? 5 : 1) {
-            const radius = au * auInPixels;
-            if (radius < w/2 && radius < h/2) {
-                g.beginPath();
-                g.arc(w / 2, h / 2, radius, 0, 2 * Math.PI);
-                g.stroke();
+        g.arc(screenPos.x, screenPos.y, radius, 0, 2 * Math.PI); // Draw circle
+        g.fillStyle = body.color; // Use body's color
+        g.fill(); // Fill the circle
+
+        // Add outline for small objects to improve visibility
+        if (radius < 5) {
+            g.strokeStyle = body.color; // Use same color as fill
+            g.lineWidth = 1;            // Thin outline
+            g.stroke();                 // Draw the outline
+        }
+
+        // Draw label and size information if body is large enough
+        if (radius > 1) {
+            // Draw body name above the object
+            g.fillStyle = 'white';      // White text for visibility
+            g.font = `${Math.min(12, Math.max(8, radius * 0.8))}px Arial`; // Scale font with object size
+            g.textAlign = 'center';     // Center text horizontally
+            g.fillText(body.name, screenPos.x, screenPos.y - radius - 5); // Position above object
+            
+            // Show real-world size information if enabled and object is large enough
+            if (this.useRealScale && radius > 3) {
+                // Format size text based on scale (show km or thousands of km)
+                const sizeText = body.radius > 1000 ? 
+                    `${(body.radius/1000).toFixed(0)}k km` :  // Show as thousands for large bodies
+                    `${body.radius.toFixed(0)} km`;           // Show in km for smaller bodies
                 
-                // Label the AU circles
-                g.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                g.font = '10px Arial';
-                g.fillText(`${au} AU`, w/2 + radius + 5, h/2);
+                g.font = '8px Arial';       // Smaller font for size info
+                g.fillText(sizeText, screenPos.x, screenPos.y + radius + 12); // Position below object
             }
         }
     }
 
     /**
-     * Converts a color string (hex or named) to an rgba string.
-     * @param {string} color The input color string.
-     * @param {number} alpha The alpha transparency value (0-1).
-     * @returns {string} The resulting rgba color string.
+     * Draw Orbital Trail
+     * Renders the path a celestial body has taken over time
+     * 
+     * @param {object} body - Celestial body whose trail to draw
+     */
+    _drawTrail(body) {
+        // Skip if no trail data or insufficient points
+        if (!body.trail || body.trail.length < 2) return;
+
+        const g = this.ctx; // Get rendering context
+        g.beginPath();      // Start new path for trail
+        
+        let firstPoint = true; // Track first point for path drawing
+        
+        // Draw line connecting all trail points
+        for (const point of body.trail) {
+            // Convert each trail point from world to screen coordinates
+            const screenPos = this.coordSystem.worldToScreen(point.x, point.y);
+            
+            if (firstPoint) {
+                // First point: move to position without drawing
+                g.moveTo(screenPos.x, screenPos.y);
+                firstPoint = false;
+            } else {
+                // Subsequent points: draw line from previous point
+                g.lineTo(screenPos.x, screenPos.y);
+            }
+        }
+        
+        // Style and draw the trail
+        g.strokeStyle = this._colorToRgba(body.color, 0.4); // Semi-transparent body color
+        g.lineWidth = 1;    // Thin line for trail
+        g.stroke();         // Draw the trail path
+    }
+
+    /**
+     * Draw Reference Grid
+     * Renders spatial reference lines and circles for scale awareness
+     */
+    _drawReferenceGrid() {
+        const g = this.ctx;           // Get rendering context
+        const w = this.canvas.width;  // Canvas width
+        const h = this.canvas.height; // Canvas height
+
+        // Set grid line style
+        g.strokeStyle = 'rgba(255, 255, 255, 0.1)'; // Very faint white lines
+        g.lineWidth = 1; // Thin lines
+
+        // Draw center cross (vertical and horizontal axes)
+        g.beginPath();
+        g.moveTo(w / 2, 0);     // Vertical line top
+        g.lineTo(w / 2, h);     // Vertical line bottom
+        g.moveTo(0, h / 2);     // Horizontal line left
+        g.lineTo(w, h / 2);     // Horizontal line right
+        g.stroke();             // Draw the cross
+
+        // Draw mode-appropriate reference circles
+        const distances = this.coordSystem.getReferenceDistances();
+        
+        distances.forEach((distance, index) => {
+            // Convert distance to screen radius
+            const screenRadius = distance / this.coordSystem.metersPerPixel;
+            
+            // Only draw if circle fits on screen and is large enough to see
+            if (screenRadius < w / 2 && screenRadius > 10) {
+                // Draw reference circle
+                g.beginPath();
+                g.arc(w / 2, h / 2, screenRadius, 0, 2 * Math.PI); // Circle centered on screen
+                g.stroke();
+                
+                // Label the circle with distance
+                g.fillStyle = 'rgba(255, 255, 255, 0.3)'; // Semi-transparent white
+                g.font = '10px Arial';                     // Small font for labels
+                const label = this._formatDistance(distance); // Format distance for display
+                g.fillText(label, w / 2 + screenRadius + 5, h / 2); // Position label next to circle
+            }
+        });
+    }
+
+    /**
+     * Format Distance for Display
+     * Converts raw distance in meters to human-readable format
+     * 
+     * @param {number} meters - Distance in meters
+     * @returns {string} Formatted distance string
+     */
+    _formatDistance(meters) {
+        if (meters < 1000) {
+            // Less than 1 km - show in meters
+            return `${meters.toFixed(0)} m`;
+        } else if (meters < 1000000) {
+            // Less than 1000 km - show in kilometers
+            return `${(meters / 1000).toFixed(1)} km`;
+        } else if (meters < 1.496e11) {
+            // Less than 1 AU - show in megameters
+            return `${(meters / 1000000).toFixed(1)} Mm`;
+        } else {
+            // 1 AU or more - show in Astronomical Units
+            return `${(meters / 1.496e11).toFixed(2)} AU`;
+        }
+    }
+
+    /**
+     * Draw User Interface
+     * Renders information overlay showing simulation status and controls
+     */
+    _drawUI() {
+        const g = this.ctx; // Get rendering context
+        
+        // Set UI text style
+        g.fillStyle = 'white';     // White text for visibility
+        g.font = '12px Arial';     // Standard font size
+        g.textAlign = 'left';      // Left-aligned text
+        
+        let y = 20;                // Starting Y position for text
+        const lineHeight = 15;     // Space between lines
+
+        // Display camera mode information
+        const modeNames = {
+            1: 'Solar System',   // Mode 1 display name
+            2: 'Inner Planets',  // Mode 2 display name
+            3: 'Planet'          // Mode 3 display name
+        };
+        const modeText = modeNames[this.cameraMode];
+        g.fillText(`Camera Mode: ${this.cameraMode} (${modeText})`, 10, y);
+        y += lineHeight;
+        
+        // Display current scale information
+        g.fillText(`Scale: ${this.coordSystem.getScaleDescription()}`, 10, y);
+        y += lineHeight;
+        
+        // Display current planet scaling multipliers
+        const multipliers = this.coordSystem.getPlanetSizeMultipliers();
+        g.fillText(`Planet Scaling: Sun ${multipliers.sunMultiplier}x, Planets ${multipliers.planetMultiplier}x`, 10, y);
+        y += lineHeight;
+        
+        // Show manual scaling status if enabled
+        if (this.overridePlanetScaling) {
+            g.fillText('Manual Scaling: ON', 10, y);
+            y += lineHeight;
+        }
+        
+        // Show target planet if in planet mode
+        if (this.cameraMode === 3 && this.targetPlanet) {
+            g.fillText(`Following: ${this.targetPlanet}`, 10, y);
+            y += lineHeight;
+        }
+        
+        // Show physical scale status
+        if (this.useRealScale) {
+            g.fillText('True Physical Scale Base', 10, y);
+            y += lineHeight;
+        }
+        
+        // Display time acceleration
+        g.fillText(`Time: ${this.timeMultiplier.toFixed(0)}x`, 10, y);
+        y += lineHeight;
+        
+        // Display simulation time in appropriate units
+        const simDays = this.simulationTime / 86400; // Convert seconds to days
+        if (simDays > 365) {
+            // More than a year - show in years
+            g.fillText(`${(simDays / 365.25).toFixed(2)} years`, 10, y);
+        } else {
+            // Less than a year - show in days
+            g.fillText(`${simDays.toFixed(1)} days`, 10, y);
+        }
+        y += lineHeight;
+
+        // Display current camera position
+        const center = this.coordSystem.cameraCenter;
+        g.fillText(`Camera: (${(center.x/1e9).toFixed(2)}, ${(center.y/1e9).toFixed(2)}) Gm`, 10, y);
+        y += lineHeight;
+        
+        // Display control hints in smaller font
+        g.font = '10px Arial'; // Smaller font for hints
+        g.fillText('Editor: cameraMode 1=Solar, 2=Inner, 3=Planet', 10, y);
+        y += 12;
+        g.fillText(`targetPlanet: ${this.targetPlanet} (for planet mode)`, 10, y);
+        y += 12;
+        g.fillText('overridePlanetScaling: enable manual scaling', 10, y);
+    }
+
+    /**
+     * Convert Color to RGBA with Alpha
+     * Utility function to add transparency to hex colors
+     * 
+     * @param {string} color - Color in hex format (#RRGGBB)
+     * @param {number} alpha - Alpha value (0.0 to 1.0)
+     * @returns {string} RGBA color string
      */
     _colorToRgba(color, alpha) {
         if (color.startsWith('#')) {
-            const r = parseInt(color.slice(1, 3), 16);
-            const g = parseInt(color.slice(3, 5), 16);
-            const b = parseInt(color.slice(5, 7), 16);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            // Parse hex color and add alpha
+            const r = parseInt(color.slice(1, 3), 16); // Red component
+            const g = parseInt(color.slice(3, 5), 16); // Green component
+            const b = parseInt(color.slice(5, 7), 16); // Blue component
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`; // Return RGBA string
         }
-        // Basic handling for named colors
-        const colorMap = {
-            'yellow': '255, 255, 0',
-            'blue': '0, 100, 255',
-            'red': '255, 100, 100',
-            'orange': '255, 165, 0'
-        };
-        const rgb = colorMap[color] || '200, 200, 200';
-        return `rgba(${rgb}, ${alpha})`;
-    }
-
-    _drawDynamic() {
-        const g = this.ctx;
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-
-        // Clear the canvas
-        this._redrawStatic();
-
-        // Filter bodies based on showOuterPlanets setting
-        const visibleBodies = this.showOuterPlanets ? this.bodies : this.bodies.slice(0, 5);
-
-        // Draw each visible body
-        visibleBodies.forEach((body) => {
-            const position = body.getPosition();
-            
-            // Draw the trail (if it exists and showOrbits is enabled)
-            if (body.trail && this.showOrbits && body.trail.length > 1) {
-                g.beginPath();
-                body.trail.forEach((trailPoint, index) => {
-                    const x = trailPoint.x * this.scalingFactor + w / 2;
-                    const y = trailPoint.y * this.scalingFactor + h / 2;
-                    if (index === 0) {
-                        g.moveTo(x, y);
-                    } else {
-                        g.lineTo(x, y);
-                    }
-                });
-                
-                // Set trail color with uniform transparency and line width
-                g.strokeStyle = this._colorToRgba(body.color, 0.4);
-                g.lineWidth = 1;
-                g.stroke();
-            }
-
-            // Calculate display position
-            const displayX = position.x * this.scalingFactor + w / 2;
-            const displayY = position.y * this.scalingFactor + h / 2;
-            
-            // Calculate display radius using real scale
-            const radius = this._getRealScaleRadius(body);
-
-            // Draw the body
-            g.beginPath();
-            g.arc(displayX, displayY, radius, 0, 2 * Math.PI);
-            g.fillStyle = body.color;
-            g.fill();
-
-            // Add a subtle outline for very small planets
-            if (radius < 3) {
-                g.strokeStyle = body.color;
-                g.lineWidth = 0.5;
-                g.stroke();
-            }
-
-            // Draw planet labels (only if they're reasonably sized)
-            if (radius > 0.5) {
-                g.fillStyle = 'white';
-                g.font = '10px Arial';
-                g.textAlign = 'center';
-                g.fillText(body.name, displayX, displayY - radius - 5);
-                
-                // Draw orbital and size information for planets
-                if (body.orbit && body.trueAnomaly !== undefined) {
-                    g.font = '8px Arial';
-                    g.fillText(`${(body.distance / 1.496e11).toFixed(2)} AU`, displayX, displayY + radius + 10);
-                    
-                    // Show real radius information
-                    if (this.useRealScale) {
-                        const radiusText = body.name === 'Sun' ? 
-                            `R: ${(body.radius/1000).toFixed(0)}k km` : 
-                            `R: ${body.radius.toFixed(0)} km`;
-                        g.fillText(radiusText, displayX, displayY + radius + 20);
-                    }
-                }
-            }
-        });
-
-        // Draw simulation info
-        g.fillStyle = 'white';
-        g.font = '12px Arial';
-        g.textAlign = 'left';
-        g.fillText(`Time Multiplier: ${this.timeMultiplier.toFixed(0)}x`, 10, 20);
-        g.fillText(`Scale: 1 px = ${(1/this.scalingFactor/1e9).toFixed(2)} Gm`, 10, 35);
-        
-        // Display scale mode
-        if (this.useRealScale) {
-            g.fillText('Real-Life Scale: ON', 10, 50);
-            g.fillText(`Sun Multiplier: ${this.sunSizeMultiplier.toFixed(1)}x`, 10, 65);
-            g.fillText(`Planet Multiplier: ${this.planetSizeMultiplier.toFixed(1)}x`, 10, 80);
-        } else {
-            g.fillText('Logarithmic Scale: ON', 10, 50);
-        }
-        
-        g.fillText('Keplerian Orbital Mechanics', 10, 95);
-        g.fillText('Complete Solar System (NASA Data)', 10, 110);
-        
-        // Display simulation time
-        const simDays = this.simulationTime / 86400;
-        const simYears = simDays / 365.25;
-        if (simYears > 1) {
-            g.fillText(`Simulation Time: ${simYears.toFixed(2)} years`, 10, 125);
-        } else {
-            g.fillText(`Simulation Time: ${simDays.toFixed(1)} days`, 10, 125);
-        }
-        
-        // Display current view mode
-        g.fillText(`View: ${this.showOuterPlanets ? 'Full Solar System' : 'Inner Planets'}`, 10, 140);
-        
-        if (this.enablePerturbations) {
-            g.fillText('Perturbations: ON', 10, 155);
-        }
-        
-        if (this.autoScale) {
-            g.fillText('Auto-Scale: ON', 10, 170);
-        }
-
-        // Show scale reference for real scale mode
-        if (this.useRealScale) {
-            g.fillText('Scale Reference:', 10, 190);
-            g.fillText(`Earth: ${(6371 * 1000 * this.scalingFactor * this.planetSizeMultiplier).toFixed(2)} px`, 10, 205);
-            g.fillText(`Sun: ${(695700 * 1000 * this.scalingFactor * this.sunSizeMultiplier).toFixed(2)} px`, 10, 220);
-        }
+        // If not hex color, return as-is
+        return color;
     }
 }
+
+
 
