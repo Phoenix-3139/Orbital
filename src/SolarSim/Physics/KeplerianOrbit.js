@@ -18,8 +18,8 @@
  * - Numerical methods for solving transcendental equations
  */
 
-// Import the Body class for planetary data and physical constants
-import { Body } from './body.js';
+// Update imports to reflect the new folder structure
+import { Body } from '../Data/body.js';
 
 /**
  * KeplerianOrbit Class

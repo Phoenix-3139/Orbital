@@ -7,6 +7,7 @@
  * - Real-time orbital mechanics visualization
  * - Multiple camera modes (Solar System, Inner Planets, Planet)
  * - Dynamic scaling and coordinate transformations
+ * - Enhanced planet rendering with atmospheric visualization
  * - UI rendering and user feedback
  * 
  * The component uses a Universal Coordinate System to handle the vast
@@ -15,8 +16,8 @@
 
 // Import required Wonderland Engine components and simulation classes
 import {Component, Property} from '@wonderlandengine/api';
-import {PlanetarySystem, KeplerianBody} from './KeplerianOrbit.js';
-import {UniversalCoordinateSystem} from './CoordinateSystem.js';
+import {PlanetarySystem} from './Physics/KeplerianOrbit.js';
+import {UniversalCoordinateSystem} from './Display/CoordinateSystem.js';
 
 /**
  * Main Display Component Class
@@ -45,6 +46,11 @@ export class Drawer extends Component {
         enablePerturbations: Property.bool(false), // Enable gravitational perturbations (unused)
         showOuterPlanets: Property.bool(true),     // Show planets beyond Jupiter
         useRealScale: Property.bool(true),         // Use physically accurate scaling
+        
+        // Enhanced Planet Rendering Properties
+        showAtmospheres: Property.bool(true),      // Whether to render atmospheric halos
+        atmosphereOpacity: Property.float(0.3),    // Opacity of atmospheric rendering (0.0-1.0)
+        planetScaleBoost: Property.float(3.0),     // Additional scaling factor for planets in Mode 3
         
         // Camera Mode Controls (Exposed to Editor)
         cameraMode: Property.int(1),               // 1=Solar System, 2=Inner Planets, 3=Planet
@@ -81,8 +87,7 @@ export class Drawer extends Component {
         // This texture will be applied to the material to display the simulation
         this.tex = this.engine.textures.create(this.canvas);
         
-        // Initialize Universal Coordinate System
-        // This handles all coordinate transformations between world space and screen space
+        // Initialize Universal Coordinate System with enhanced planet mode scaling
         this.coordSystem = new UniversalCoordinateSystem(
             this.canvas.width,   // Canvas width for coordinate calculations
             this.canvas.height   // Canvas height for coordinate calculations
@@ -171,6 +176,9 @@ export class Drawer extends Component {
         // Configure camera smoothing based on editor setting
         this.coordSystem.smoothTransitions = this.enableCameraSmoothing;
         
+        // Apply enhanced planet scaling for Mode 3
+        this._applyEnhancedPlanetScaling();
+        
         // Apply manual scaling overrides if enabled in editor
         if (this.overridePlanetScaling) {
             this._applyManualScaling();
@@ -182,9 +190,34 @@ export class Drawer extends Component {
         }
 
         // Log initialization status for debugging
-        console.log('Camera System initialized');
+        console.log('Camera System initialized with enhanced planet rendering');
         console.log(`Mode: ${this.cameraMode} (${this.coordSystem.cameraMode})`);
         console.log(`Scale: ${this.coordSystem.getScaleDescription()}`);
+        console.log(`Planet Scale Boost: ${this.planetScaleBoost}x`);
+        console.log(`Atmosphere Rendering: ${this.showAtmospheres ? 'ON' : 'OFF'}`);
+    }
+
+    /**
+     * Apply Enhanced Planet Scaling for Mode 3
+     * Significantly increases planet sizes in planet mode for better visibility
+     */
+    _applyEnhancedPlanetScaling() {
+        // Get current camera mode name
+        const currentMode = this.coordSystem.cameraMode;
+        
+        // Apply enhanced scaling specifically for planet mode
+        if (currentMode === 'PLANET') {
+            // Dramatically increase planet visibility in planet mode
+            this.coordSystem.planetSizeMultipliers[currentMode] = {
+                sunMultiplier: 0.02,                                    // Sun heavily scaled down (would dominate view)
+                planetMultiplier: 5.0 * this.planetScaleBoost,         // Planets scaled up significantly with boost
+                minPixelSize: Math.max(8.0, this.minPlanetPixels)      // Larger minimum size for planet mode
+            };
+            
+            console.log(`Enhanced planet scaling applied for Mode 3:`);
+            console.log(`  Planet Multiplier: ${5.0 * this.planetScaleBoost}x`);
+            console.log(`  Minimum Size: ${Math.max(8.0, this.minPlanetPixels)} pixels`);
+        }
     }
 
     /**
@@ -269,14 +302,22 @@ export class Drawer extends Component {
             // Apply new camera mode
             this.coordSystem.setCameraModeByNumber(this.cameraMode, targetPlanet);
             
+            // Reapply enhanced scaling for new mode
+            this._applyEnhancedPlanetScaling();
+            
             // Reapply manual scaling if it was enabled
             if (this.overridePlanetScaling) {
                 this._applyManualScaling();
             }
         }
 
+        // Apply real-time scaling updates
+        if (this.cameraMode === 3) {
+            // Update enhanced planet scaling in real-time for Mode 3
+            this._applyEnhancedPlanetScaling();
+        }
+        
         // Apply manual scaling updates in real-time if enabled
-        // This allows live adjustment of scaling in editor
         if (this.overridePlanetScaling) {
             this._applyManualScaling();
         }
@@ -315,6 +356,7 @@ export class Drawer extends Component {
     /**
      * Calculate Display Radius for Celestial Body
      * Determines how large to draw a planet/sun on screen based on camera mode and scaling
+     * Enhanced for Mode 3 with larger planet visualization
      * 
      * @param {object} body - Celestial body object (planet or sun)
      * @returns {number} Radius in pixels for rendering
@@ -322,7 +364,14 @@ export class Drawer extends Component {
     _calculateDisplayRadius(body) {
         // If not using real scale, fall back to logarithmic scaling
         if (!this.useRealScale) {
-            return body.getDisplayRadius(); // Use body's built-in display scaling
+            let baseRadius = body.getDisplayRadius(); // Use body's built-in display scaling
+            
+            // Apply additional scaling boost in planet mode
+            if (this.cameraMode === 3) {
+                baseRadius *= this.planetScaleBoost;
+            }
+            
+            return Math.max(this.minPlanetPixels, baseRadius);
         }
 
         // Get world radius in meters
@@ -336,14 +385,70 @@ export class Drawer extends Component {
         } else {
             // No radius information available - use minimum size
             console.warn(`Body ${body.name} has no radius information, using default`);
-            return this.minPlanetPixels;
+            return this.minPlanetPixels * (this.cameraMode === 3 ? this.planetScaleBoost : 1);
         }
 
         // Convert world radius to screen pixels using current scale
-        const screenRadius = worldRadius / this.coordSystem.metersPerPixel;
+        let screenRadius = worldRadius / this.coordSystem.metersPerPixel;
+        
+        // Apply scaling multipliers from coordinate system
+        const multipliers = this.coordSystem.getPlanetSizeMultipliers();
+        if (body.name === 'Sun') {
+            screenRadius *= multipliers.sunMultiplier;
+        } else {
+            screenRadius *= multipliers.planetMultiplier;
+        }
 
         // Ensure minimum visibility - never smaller than minimum pixel size
-        return Math.max(this.minPlanetPixels, screenRadius);
+        const minSize = this.cameraMode === 3 ? 
+            Math.max(8.0, this.minPlanetPixels) : // Larger minimum in planet mode
+            this.minPlanetPixels;
+            
+        return Math.max(minSize, screenRadius);
+    }
+
+    /**
+     * Calculate Atmospheric Radius for Rendering
+     * Determines the size of the atmospheric halo around planets
+     * 
+     * @param {object} body - Celestial body object
+     * @param {number} planetRadius - Planet's display radius in pixels
+     * @returns {number} Atmospheric radius in pixels
+     */
+    _calculateAtmosphericRadius(body, planetRadius) {
+        // Get atmospheric data from Body class
+        const bodyData = Object.values(this.bodies).find(b => b.name === body.name);
+        if (!bodyData || !this.showAtmospheres) {
+            return 0; // No atmosphere or atmospheric rendering disabled
+        }
+        
+        // Get atmospheric density at altitude for this body
+        const atmosphericSummary = body.getAtmosphericSummary?.() || 
+                                  bodyData.getAtmosphericSummary?.();
+        
+        if (!atmosphericSummary) {
+            return 0; // No atmospheric data available
+        }
+        
+        // Calculate atmospheric extension based on scale height and planet size
+        let atmosphericExtension;
+        
+        if (this.cameraMode === 3 && this.useRealScale) {
+            // In planet mode with real scale, use actual atmospheric scale height
+            const scaleHeight = atmosphericSummary.scaleHeight || 10000; // Default 10km scale height
+            const worldAtmosphereRadius = scaleHeight * 3; // Extend 3 scale heights
+            
+            // Convert to screen pixels
+            atmosphericExtension = worldAtmosphereRadius / this.coordSystem.metersPerPixel;
+        } else {
+            // For other modes, use proportional atmospheric extension
+            atmosphericExtension = planetRadius * 0.5; // 50% larger than planet
+        }
+        
+        // Ensure atmospheric halo is visible but not overwhelming
+        atmosphericExtension = Math.max(2, Math.min(planetRadius * 2, atmosphericExtension));
+        
+        return planetRadius + atmosphericExtension;
     }
 
     /**
@@ -373,10 +478,10 @@ export class Drawer extends Component {
             visibleBodies = this.showOuterPlanets ? this.bodies : this.bodies.slice(0, 5);
         }
 
-        // Render each visible celestial body
+        // Render each visible celestial body with enhanced atmospheric rendering
         visibleBodies.forEach((body) => {
-            this._drawBody(body);           // Draw the planet/sun itself
-            if (this.showOrbits) {          // Draw orbital trail if enabled
+            this._drawBodyWithAtmosphere(body); // Enhanced rendering with atmosphere
+            if (this.showOrbits) {              // Draw orbital trail if enabled
                 this._drawTrail(body);
             }
         });
@@ -386,57 +491,207 @@ export class Drawer extends Component {
     }
 
     /**
-     * Draw Individual Celestial Body
-     * Renders a single planet or sun with proper scaling and labeling
+     * Draw Individual Celestial Body with Atmospheric Rendering
+     * Enhanced version that renders both the planet and its atmosphere
      * 
      * @param {object} body - Celestial body to draw
      */
-    _drawBody(body) {
+    _drawBodyWithAtmosphere(body) {
         const g = this.ctx; // Get rendering context
         
         // Convert world position to screen coordinates
         const screenPos = this.coordSystem.worldToScreen(body.position.x, body.position.y);
         
         // Skip rendering if body is off-screen (performance optimization)
-        const margin = 50; // Extra margin around screen edges
+        const margin = 100; // Extra margin around screen edges for large atmospheric halos
         if (screenPos.x < -margin || screenPos.x > this.canvas.width + margin ||
             screenPos.y < -margin || screenPos.y > this.canvas.height + margin) {
             return; // Body is not visible, skip rendering
         }
 
         // Calculate display radius based on camera mode and scaling
-        const radius = this._calculateDisplayRadius(body);
+        const planetRadius = this._calculateDisplayRadius(body);
+        
+        // Calculate atmospheric radius if atmospheres are enabled
+        const atmosphericRadius = this._calculateAtmosphericRadius(body, planetRadius);
 
-        // Draw the celestial body as a filled circle
+        // === ATMOSPHERIC RENDERING ===
+        // Draw atmospheric halo first (behind the planet)
+        if (atmosphericRadius > planetRadius && this.showAtmospheres) {
+            this._drawAtmosphere(body, screenPos, planetRadius, atmosphericRadius);
+        }
+
+        // === PLANET RENDERING ===
+        // Draw the main celestial body
         g.beginPath();
-        g.arc(screenPos.x, screenPos.y, radius, 0, 2 * Math.PI); // Draw circle
+        g.arc(screenPos.x, screenPos.y, planetRadius, 0, 2 * Math.PI); // Draw circle
         g.fillStyle = body.color; // Use body's color
         g.fill(); // Fill the circle
 
-        // Add outline for small objects to improve visibility
-        if (radius < 5) {
-            g.strokeStyle = body.color; // Use same color as fill
-            g.lineWidth = 1;            // Thin outline
-            g.stroke();                 // Draw the outline
+        // Add outline for better definition, especially useful for larger planets
+        if (planetRadius >= 3 || this.cameraMode === 3) {
+            g.strokeStyle = this._adjustColorBrightness(body.color, 0.3); // Slightly brighter outline
+            g.lineWidth = Math.max(1, planetRadius * 0.05); // Scale line width with planet size
+            g.stroke(); // Draw the outline
         }
 
-        // Draw label and size information if body is large enough
-        if (radius > 1) {
-            // Draw body name above the object
-            g.fillStyle = 'white';      // White text for visibility
-            g.font = `${Math.min(12, Math.max(8, radius * 0.8))}px Arial`; // Scale font with object size
-            g.textAlign = 'center';     // Center text horizontally
-            g.fillText(body.name, screenPos.x, screenPos.y - radius - 5); // Position above object
+        // === LABELING AND SIZE INFO ===
+        // Draw enhanced labels and information for larger planets
+        if (planetRadius > 2) {
+            this._drawBodyLabels(body, screenPos, planetRadius, atmosphericRadius);
+        }
+    }
+
+    /**
+     * Draw Atmospheric Halo Around Planet
+     * Simplified version that renders a translucent circle for the atmosphere.
+     * This approach ensures visibility in Mode 3.
+     * 
+     * @param {object} body - Celestial body
+     * @param {object} screenPos - Screen position {x, y}
+     * @param {number} planetRadius - Planet radius in pixels
+     * @param {number} atmosphericRadius - Atmospheric radius in pixels
+     */
+    _drawAtmosphere(body, screenPos, planetRadius, atmosphericRadius) {
+        const g = this.ctx;
+
+        // Ensure this is only drawn in Mode 3
+        if (this.cameraMode !== 3) return;
+
+        // Set atmospheric color (default to light blue if not specified)
+        let atmosphericColor = 'rgba(135, 206, 250, 0.3)'; // Default blue atmosphere
+        const bodyData = Object.values(this.bodies).find(b => b.name === body.name);
+        if (bodyData?.atmosphere?.color) {
+            atmosphericColor = bodyData.atmosphere.color;
+        }
+
+        // Draw the translucent circle for the atmosphere
+        g.beginPath();
+        g.arc(screenPos.x, screenPos.y, atmosphericRadius, 0, 2 * Math.PI);
+        g.fillStyle = atmosphericColor;
+        g.fill();
+    }
+
+    /**
+     * Parse Atmospheric Color String to RGB Components
+     * Extracts RGB values from various color formats
+     * 
+     * @param {string} colorString - Color in CSS format
+     * @param {object} body - Celestial body for fallback colors
+     * @returns {object} RGB color object {r, g, b}
+     */
+    _parseAtmosphericColor(colorString, body) {
+        // Default atmospheric colors based on planet type
+        const defaultColors = {
+            'Earth': { r: 135, g: 206, b: 250 }, // Light blue
+            'Mars': { r: 255, g: 100, b: 100 },  // Red-orange
+            'Venus': { r: 255, g: 165, b: 0 },   // Orange
+            'Jupiter': { r: 218, g: 165, b: 32 }, // Golden
+            'Saturn': { r: 250, g: 213, b: 165 }, // Pale gold
+            'Uranus': { r: 79, g: 208, b: 227 },  // Cyan
+            'Neptune': { r: 65, g: 105, b: 225 }, // Blue
+        };
+        
+        // Try to parse rgba() format
+        const rgbaMatch = colorString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        if (rgbaMatch) {
+            return {
+                r: parseInt(rgbaMatch[1]),
+                g: parseInt(rgbaMatch[2]),
+                b: parseInt(rgbaMatch[3])
+            };
+        }
+        
+        // Fall back to planet-specific default or generic blue
+        return defaultColors[body.name] || { r: 135, g: 206, b: 250 };
+    }
+
+    /**
+     * Draw Enhanced Body Labels and Information
+     * Renders planet names, sizes, and atmospheric data
+     * 
+     * @param {object} body - Celestial body
+     * @param {object} screenPos - Screen position {x, y}
+     * @param {number} planetRadius - Planet radius in pixels
+     * @param {number} atmosphericRadius - Atmospheric radius in pixels
+     */
+    _drawBodyLabels(body, screenPos, planetRadius, atmosphericRadius) {
+        const g = this.ctx;
+        
+        // Calculate label positioning
+        const labelY = screenPos.y - Math.max(planetRadius, atmosphericRadius) - 8;
+        const infoY = screenPos.y + Math.max(planetRadius, atmosphericRadius) + 15;
+        
+        // === PLANET NAME ===
+        g.fillStyle = 'white';
+        g.font = `${Math.min(16, Math.max(10, planetRadius * 0.6))}px Arial Bold`;
+        g.textAlign = 'center';
+        g.fillText(body.name, screenPos.x, labelY);
+        
+        // === SIZE INFORMATION ===
+        if (this.useRealScale && planetRadius > 5) {
+            g.font = '10px Arial';
             
-            // Show real-world size information if enabled and object is large enough
-            if (this.useRealScale && radius > 3) {
-                // Format size text based on scale (show km or thousands of km)
-                const sizeText = body.radius > 1000 ? 
-                    `${(body.radius/1000).toFixed(0)}k km` :  // Show as thousands for large bodies
-                    `${body.radius.toFixed(0)} km`;           // Show in km for smaller bodies
+            // Show planet size
+            const sizeText = body.radius > 10000 ? 
+                `${(body.radius/1000).toFixed(0)}k km` :  // Show as thousands for large bodies
+                `${body.radius.toFixed(0)} km`;           // Show in km for smaller bodies
+            
+            g.fillText(sizeText, screenPos.x, infoY);
+            
+            // === ATMOSPHERIC INFORMATION ===
+            if (atmosphericRadius > planetRadius && this.cameraMode === 3) {
+                const atmosphericSummary = body.getAtmosphericSummary?.();
+                if (atmosphericSummary) {
+                    g.font = '8px Arial';
+                    g.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    
+                    // Show surface pressure if available
+                    if (atmosphericSummary.estimatedSurfacePressure > 0) {
+                        const pressure = atmosphericSummary.estimatedSurfacePressure;
+                        let pressureText;
+                        if (pressure > 100000) {
+                            pressureText = `${(pressure / 100000).toFixed(1)} bar`;
+                        } else if (pressure > 1000) {
+                            pressureText = `${(pressure / 1000).toFixed(1)} kPa`;
+                        } else {
+                            pressureText = `${pressure.toFixed(0)} Pa`;
+                        }
+                        g.fillText(`Pressure: ${pressureText}`, screenPos.x, infoY + 12);
+                    }
+                    
+                    // Show surface density
+                    if (atmosphericSummary.surfaceDensity > 0) {
+                        const density = atmosphericSummary.surfaceDensity;
+                        const densityText = density > 1 ? 
+                            `${density.toFixed(1)} kg/m³` : 
+                            `${(density * 1000).toFixed(0)} g/m³`;
+                        g.fillText(`Density: ${densityText}`, screenPos.x, infoY + 24);
+                    }
+                }
+            }
+        }
+        
+        // === DISTANCE INFORMATION IN PLANET MODE ===
+        if (this.cameraMode === 3 && this.targetPlanet && body.name !== this.targetPlanet) {
+            const targetBody = this.bodies.find(b => b.name === this.targetPlanet);
+            if (targetBody) {
+                const distance = body.getDistanceFrom(targetBody);
+                g.font = '8px Arial';
+                g.fillStyle = 'rgba(255, 255, 0, 0.8)'; // Yellow for distance info
                 
-                g.font = '8px Arial';       // Smaller font for size info
-                g.fillText(sizeText, screenPos.x, screenPos.y + radius + 12); // Position below object
+                let distanceText;
+                if (distance > 1e11) {
+                    distanceText = `${(distance / 1.496e11).toFixed(2)} AU`;
+                } else if (distance > 1e9) {
+                    distanceText = `${(distance / 1e9).toFixed(1)} Gm`;
+                } else if (distance > 1e6) {
+                    distanceText = `${(distance / 1e6).toFixed(1)} Mm`;
+                } else {
+                    distanceText = `${(distance / 1e3).toFixed(0)} km`;
+                }
+                
+                g.fillText(`${distanceText} from ${this.targetPlanet}`, screenPos.x, infoY + 36);
             }
         }
     }
@@ -473,8 +728,8 @@ export class Drawer extends Component {
         
         // Style and draw the trail
         g.strokeStyle = this._colorToRgba(body.color, 0.4); // Semi-transparent body color
-        g.lineWidth = 1;    // Thin line for trail
-        g.stroke();         // Draw the trail path
+        g.lineWidth = this.cameraMode === 3 ? 2 : 1; // Thicker trails in planet mode
+        g.stroke(); // Draw the trail path
     }
 
     /**
@@ -563,7 +818,7 @@ export class Drawer extends Component {
         const modeNames = {
             1: 'Solar System',   // Mode 1 display name
             2: 'Inner Planets',  // Mode 2 display name
-            3: 'Planet'          // Mode 3 display name
+            3: 'Planet (Enhanced)' // Mode 3 display name with enhancement indicator
         };
         const modeText = modeNames[this.cameraMode];
         g.fillText(`Camera Mode: ${this.cameraMode} (${modeText})`, 10, y);
@@ -577,6 +832,20 @@ export class Drawer extends Component {
         const multipliers = this.coordSystem.getPlanetSizeMultipliers();
         g.fillText(`Planet Scaling: Sun ${multipliers.sunMultiplier}x, Planets ${multipliers.planetMultiplier}x`, 10, y);
         y += lineHeight;
+        
+        // Show enhanced planet mode features
+        if (this.cameraMode === 3) {
+            g.fillText(`Planet Scale Boost: ${this.planetScaleBoost}x`, 10, y);
+            y += lineHeight;
+            
+            g.fillText(`Atmosphere Rendering: ${this.showAtmospheres ? 'ON' : 'OFF'}`, 10, y);
+            y += lineHeight;
+            
+            if (this.showAtmospheres) {
+                g.fillText(`Atmosphere Opacity: ${(this.atmosphereOpacity * 100).toFixed(0)}%`, 10, y);
+                y += lineHeight;
+            }
+        }
         
         // Show manual scaling status if enabled
         if (this.overridePlanetScaling) {
@@ -618,11 +887,34 @@ export class Drawer extends Component {
         
         // Display control hints in smaller font
         g.font = '10px Arial'; // Smaller font for hints
-        g.fillText('Editor: cameraMode 1=Solar, 2=Inner, 3=Planet', 10, y);
+        g.fillText('Editor Properties:', 10, y);
         y += 12;
-        g.fillText(`targetPlanet: ${this.targetPlanet} (for planet mode)`, 10, y);
+        g.fillText('• planetScaleBoost: Planet size multiplier for Mode 3', 10, y);
         y += 12;
-        g.fillText('overridePlanetScaling: enable manual scaling', 10, y);
+        g.fillText('• showAtmospheres: Enable atmospheric rendering', 10, y);
+        y += 12;
+        g.fillText('• atmosphereOpacity: Atmosphere transparency (0-1)', 10, y);
+        y += 12;
+        g.fillText(`• targetPlanet: ${this.targetPlanet} (for planet mode)`, 10, y);
+    }
+
+    /**
+     * Adjust Color Brightness
+     * Utility function to lighten or darken colors
+     * 
+     * @param {string} color - Original color
+     * @param {number} factor - Brightness factor (-1 to 1)
+     * @returns {string} Adjusted color
+     */
+    _adjustColorBrightness(color, factor) {
+        // Simple brightness adjustment for hex colors
+        if (color.startsWith('#')) {
+            const r = Math.min(255, Math.max(0, parseInt(color.slice(1, 3), 16) + factor * 255));
+            const g = Math.min(255, Math.max(0, parseInt(color.slice(3, 5), 16) + factor * 255));
+            const b = Math.min(255, Math.max(0, parseInt(color.slice(5, 7), 16) + factor * 255));
+            return `rgb(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)})`;
+        }
+        return color; // Return original if not hex
     }
 
     /**

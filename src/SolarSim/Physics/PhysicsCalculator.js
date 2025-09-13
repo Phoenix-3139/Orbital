@@ -22,6 +22,8 @@
  * - Gravitational force calculations using inverse square law
  */
 
+import { Body } from '../Data/body.js';
+
 export class PhysicsCalculator {
     // === UNIVERSAL CONSTANTS ===
     // Fundamental physical constant used throughout gravitational calculations
