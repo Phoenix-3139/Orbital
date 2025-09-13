@@ -13,8 +13,10 @@ export class Drawer extends Component {
         enablePerturbations: Property.bool(false),
         showOuterPlanets: Property.bool(true), // Toggle for outer planets visibility
         autoScale: Property.bool(true), // Automatically adjust scale based on visible planets
-        planetSizeScale: Property.float(1.0), // Exposed property to control planet size
-        sunSizeScale: Property.float(1.0), // Exposed property to control sun size
+        useRealScale: Property.bool(true), // Use true real-life scale for planets
+        sunSizeMultiplier: Property.float(1.0), // Multiplier for sun size (for visibility)
+        planetSizeMultiplier: Property.float(1.0), // Multiplier for planet sizes (for visibility)
+        minPlanetPixels: Property.float(1.0), // Minimum size in pixels for planets
     };
 
     // Global scaling factor for positions (will be dynamic)
@@ -105,7 +107,8 @@ export class Drawer extends Component {
                 const periodYears = periodDays / 365.25;
                 console.log(`${body.name}: Period = ${periodYears.toFixed(2)} years (${periodDays.toFixed(0)} days), ` +
                            `Semi-major axis = ${(body.orbit.a / 1.496e11).toFixed(3)} AU, ` +
-                           `Eccentricity = ${body.orbit.e.toFixed(3)}`);
+                           `Eccentricity = ${body.orbit.e.toFixed(3)}, ` +
+                           `Radius = ${body.radius} km`);
             }
         });
     }
@@ -142,6 +145,30 @@ export class Drawer extends Component {
             const targetPixels = Math.min(this.canvas.width, this.canvas.height) * 0.4;
             this.scalingFactor = targetPixels / maxDistance;
         }
+    }
+
+    /**
+     * Calculate real-life scale radius in pixels
+     */
+    _getRealScaleRadius(body) {
+        if (!this.useRealScale) {
+            // Fallback to original logarithmic scaling
+            return body.getDisplayRadius();
+        }
+
+        // Convert radius from km to meters, then to pixels using current scaling factor
+        const radiusInMeters = body.radius * 1000; // km to meters
+        let radiusInPixels = radiusInMeters * this.scalingFactor;
+
+        // Apply size multipliers
+        if (body.name === 'Sun') {
+            radiusInPixels *= this.sunSizeMultiplier;
+        } else {
+            radiusInPixels *= this.planetSizeMultiplier;
+        }
+
+        // Ensure minimum visibility
+        return Math.max(this.minPlanetPixels, radiusInPixels);
     }
 
     _redrawStatic() {
@@ -207,7 +234,6 @@ export class Drawer extends Component {
         return `rgba(${rgb}, ${alpha})`;
     }
 
-
     _drawDynamic() {
         const g = this.ctx;
         const w = this.canvas.width;
@@ -238,7 +264,7 @@ export class Drawer extends Component {
                 
                 // Set trail color with uniform transparency and line width
                 g.strokeStyle = this._colorToRgba(body.color, 0.4);
-                g.lineWidth = 1; // Uniform line width, no "glow" for the sun
+                g.lineWidth = 1;
                 g.stroke();
             }
 
@@ -246,17 +272,8 @@ export class Drawer extends Component {
             const displayX = position.x * this.scalingFactor + w / 2;
             const displayY = position.y * this.scalingFactor + h / 2;
             
-            // Calculate display radius using the exposed size scale properties
-            let radius;
-            if (body.name === 'Sun') {
-                radius = body.getDisplayRadius() * this.sunSizeScale;
-            } else {
-                radius = body.getDisplayRadius() * this.planetSizeScale;
-                // Make outer planets more visible for clarity
-                if (body.name === 'Jupiter' || body.name === 'Saturn') radius *= 1.5;
-                if (body.name === 'Uranus' || body.name === 'Neptune') radius *= 2;
-            }
-
+            // Calculate display radius using real scale
+            const radius = this._getRealScaleRadius(body);
 
             // Draw the body
             g.beginPath();
@@ -264,17 +281,32 @@ export class Drawer extends Component {
             g.fillStyle = body.color;
             g.fill();
 
+            // Add a subtle outline for very small planets
+            if (radius < 3) {
+                g.strokeStyle = body.color;
+                g.lineWidth = 0.5;
+                g.stroke();
+            }
+
             // Draw planet labels (only if they're reasonably sized)
-            if (radius > 1) {
+            if (radius > 0.5) {
                 g.fillStyle = 'white';
                 g.font = '10px Arial';
                 g.textAlign = 'center';
                 g.fillText(body.name, displayX, displayY - radius - 5);
                 
-                // Draw orbital information for planets
+                // Draw orbital and size information for planets
                 if (body.orbit && body.trueAnomaly !== undefined) {
                     g.font = '8px Arial';
                     g.fillText(`${(body.distance / 1.496e11).toFixed(2)} AU`, displayX, displayY + radius + 10);
+                    
+                    // Show real radius information
+                    if (this.useRealScale) {
+                        const radiusText = body.name === 'Sun' ? 
+                            `R: ${(body.radius/1000).toFixed(0)}k km` : 
+                            `R: ${body.radius.toFixed(0)} km`;
+                        g.fillText(radiusText, displayX, displayY + radius + 20);
+                    }
                 }
             }
         });
@@ -285,27 +317,44 @@ export class Drawer extends Component {
         g.textAlign = 'left';
         g.fillText(`Time Multiplier: ${this.timeMultiplier.toFixed(0)}x`, 10, 20);
         g.fillText(`Scale: 1 px = ${(1/this.scalingFactor/1e9).toFixed(2)} Gm`, 10, 35);
-        g.fillText('Keplerian Orbital Mechanics', 10, 50);
-        g.fillText('Complete Solar System (NASA Data)', 10, 65);
+        
+        // Display scale mode
+        if (this.useRealScale) {
+            g.fillText('Real-Life Scale: ON', 10, 50);
+            g.fillText(`Sun Multiplier: ${this.sunSizeMultiplier.toFixed(1)}x`, 10, 65);
+            g.fillText(`Planet Multiplier: ${this.planetSizeMultiplier.toFixed(1)}x`, 10, 80);
+        } else {
+            g.fillText('Logarithmic Scale: ON', 10, 50);
+        }
+        
+        g.fillText('Keplerian Orbital Mechanics', 10, 95);
+        g.fillText('Complete Solar System (NASA Data)', 10, 110);
         
         // Display simulation time
         const simDays = this.simulationTime / 86400;
         const simYears = simDays / 365.25;
         if (simYears > 1) {
-            g.fillText(`Simulation Time: ${simYears.toFixed(2)} years`, 10, 80);
+            g.fillText(`Simulation Time: ${simYears.toFixed(2)} years`, 10, 125);
         } else {
-            g.fillText(`Simulation Time: ${simDays.toFixed(1)} days`, 10, 80);
+            g.fillText(`Simulation Time: ${simDays.toFixed(1)} days`, 10, 125);
         }
         
         // Display current view mode
-        g.fillText(`View: ${this.showOuterPlanets ? 'Full Solar System' : 'Inner Planets'}`, 10, 95);
+        g.fillText(`View: ${this.showOuterPlanets ? 'Full Solar System' : 'Inner Planets'}`, 10, 140);
         
         if (this.enablePerturbations) {
-            g.fillText('Perturbations: ON', 10, 110);
+            g.fillText('Perturbations: ON', 10, 155);
         }
         
         if (this.autoScale) {
-            g.fillText('Auto-Scale: ON', 10, 125);
+            g.fillText('Auto-Scale: ON', 10, 170);
+        }
+
+        // Show scale reference for real scale mode
+        if (this.useRealScale) {
+            g.fillText('Scale Reference:', 10, 190);
+            g.fillText(`Earth: ${(6371 * 1000 * this.scalingFactor * this.planetSizeMultiplier).toFixed(2)} px`, 10, 205);
+            g.fillText(`Sun: ${(695700 * 1000 * this.scalingFactor * this.sunSizeMultiplier).toFixed(2)} px`, 10, 220);
         }
     }
 }

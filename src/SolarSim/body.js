@@ -1,131 +1,199 @@
-// Legacy Body class maintained for compatibility
-// Note: This is superseded by the KeplerianBody class for new implementations
-
 export class Body {
-    // Complete planetary data from NASA JPL Horizons
+    // Constants
+    static AU_TO_METERS = 149597870700; // 1 AU in meters
+    static GRAVITATIONAL_CONSTANT = 6.67430e-11; // m^3 kg^-1 s^-2
+    static GM_SUN = 1.32712440018e20; // m^3/s^2 (for orbital calculations)
+
+    // Planetary data - moved outside constructor as static property
     static planetData = {
         sun: {
-            mass: 1.9884e30, // ~1988410 x 10^24 kg
+            name: 'Sun',
+            mass: 1.9884e30, // kg
             radius: 695700, // km
             color: 'yellow',
-            name: 'Sun',
-            atmosphere: null // No atmosphere for the Sun
+            atmosphere: null, // No atmosphere
         },
         mercury: {
-            mass: 3.302e23, // 3.302 x10^23 kg
+            name: 'Mercury',
+            mass: 3.302e23, // kg
             radius: 2439.4, // km
             color: 'gray',
-            name: 'Mercury',
-            atmosphere: null // No significant atmosphere
+            atmosphere: null, // No significant atmosphere
+            orbit: {
+                semiMajorAxis: 0.387 * 149597870700, // meters (AU to meters)
+                eccentricity: 0.206,
+                inclination: 7.005 * (Math.PI / 180), // radians
+                longitudeOfAscendingNode: 48.331 * (Math.PI / 180), // radians
+                argumentOfPeriapsis: 29.124 * (Math.PI / 180), // radians
+                meanAnomalyAtEpoch: 174.796 * (Math.PI / 180), // radians
+                epochTime: 0, // seconds
+            },
         },
         venus: {
-            mass: 4.8685e24, // 48.685 x10^23 kg
+            name: 'Venus',
+            mass: 4.8685e24, // kg
             radius: 6051.84, // km
             color: 'orange',
-            name: 'Venus',
             atmosphere: {
                 layers: [
                     { height: 0, density: 65 }, // Surface: 65 kg/m³
                     { height: 50e3, density: 10 }, // 50 km: 10 kg/m³
-                    { height: 100e3, density: 0.1 } // 100 km: 0.1 kg/m³
+                    { height: 100e3, density: 0.1 }, // 100 km: 0.1 kg/m³
                 ],
-                color: 'rgba(255, 165, 0, 0.3)' // Orange haze
-            }
+                color: 'rgba(255, 165, 0, 0.3)', // Orange haze
+            },
+            orbit: {
+                semiMajorAxis: 0.723 * 149597870700, // meters
+                eccentricity: 0.007,
+                inclination: 3.39458 * (Math.PI / 180), // radians
+                longitudeOfAscendingNode: 76.68069 * (Math.PI / 180), // radians
+                argumentOfPeriapsis: 54.85229 * (Math.PI / 180), // radians
+                meanAnomalyAtEpoch: 50.115 * (Math.PI / 180), // radians
+                epochTime: 0, // seconds
+            },
         },
         earth: {
-            mass: 5.97219e24, // 5.97219 x10^24 kg
+            name: 'Earth',
+            mass: 5.97219e24, // kg
             radius: 6371.01, // km
             color: 'blue',
-            name: 'Earth',
             atmosphere: {
                 layers: [
                     { height: 0, density: 1.225 }, // Surface: 1.225 kg/m³
                     { height: 10e3, density: 0.4135 }, // 10 km: 0.4135 kg/m³
                     { height: 50e3, density: 0.001027 }, // 50 km: 0.001027 kg/m³
-                    { height: 100e3, density: 0 } // 100 km: 0 kg/m³ (Kármán line)
+                    { height: 100e3, density: 0 }, // 100 km: 0 kg/m³ (Kármán line)
                 ],
-                color: 'rgba(135, 206, 250, 0.5)' // Light blue atmosphere
-            }
+                color: 'rgba(135, 206, 250, 0.5)', // Light blue atmosphere
+            },
+            orbit: {
+                semiMajorAxis: 1.000 * 149597870700, // meters
+                eccentricity: 0.017,
+                inclination: 0.00005 * (Math.PI / 180), // radians
+                longitudeOfAscendingNode: -11.26064 * (Math.PI / 180), // radians
+                argumentOfPeriapsis: 114.20783 * (Math.PI / 180), // radians
+                meanAnomalyAtEpoch: 357.51716 * (Math.PI / 180), // radians
+                epochTime: 0, // seconds
+            },
         },
         mars: {
-            mass: 6.4171e23, // 6.4171 x10^23 kg
+            name: 'Mars',
+            mass: 6.4171e23, // kg
             radius: 3389.92, // km
             color: 'red',
-            name: 'Mars',
             atmosphere: {
                 layers: [
                     { height: 0, density: 0.020 }, // Surface: 0.020 kg/m³
                     { height: 10e3, density: 0.007 }, // 10 km: 0.007 kg/m³
-                    { height: 50e3, density: 0 } // 50 km: 0 kg/m³
+                    { height: 50e3, density: 0 }, // 50 km: 0 kg/m³
                 ],
-                color: 'rgba(255, 0, 0, 0.3)' // Red haze
-            }
+                color: 'rgba(255, 0, 0, 0.3)', // Red haze
+            },
+            orbit: {
+                semiMajorAxis: 1.524 * 149597870700, // meters
+                eccentricity: 0.093,
+                inclination: 1.850 * (Math.PI / 180), // radians
+                longitudeOfAscendingNode: 49.57854 * (Math.PI / 180), // radians
+                argumentOfPeriapsis: 286.46230 * (Math.PI / 180), // radians
+                meanAnomalyAtEpoch: 19.412 * (Math.PI / 180), // radians
+                epochTime: 0, // seconds
+            },
         },
         jupiter: {
-            mass: 1.89819e27, // 18.9819 x10^26 kg
+            name: 'Jupiter',
+            mass: 1.89819e27, // kg
             radius: 69911, // km
             color: '#DAA520', // Dark golden rod
-            name: 'Jupiter',
             atmosphere: {
                 layers: [
                     { height: 0, density: 0.16 }, // Surface: 0.16 kg/m³
                     { height: 50e3, density: 0.1 }, // 50 km: 0.1 kg/m³
-                    { height: 100e3, density: 0.01 } // 100 km: 0.01 kg/m³
+                    { height: 100e3, density: 0.01 }, // 100 km: 0.01 kg/m³
                 ],
-                color: 'rgba(218, 165, 32, 0.3)' // Golden haze
-            }
+                color: 'rgba(218, 165, 32, 0.3)', // Golden haze
+            },
+            orbit: {
+                semiMajorAxis: 5.203 * 149597870700, // meters
+                eccentricity: 0.048,
+                inclination: 1.305 * (Math.PI / 180), // radians
+                longitudeOfAscendingNode: 100.55615 * (Math.PI / 180), // radians
+                argumentOfPeriapsis: 273.867 * (Math.PI / 180), // radians
+                meanAnomalyAtEpoch: 20.020 * (Math.PI / 180), // radians
+                epochTime: 0, // seconds
+            },
         },
-        // Add similar atmospheric data for Saturn, Uranus, and Neptune
         saturn: {
-            mass: 5.6834e26,
-            radius: 58232,
-            color: '#FAD5A5',
             name: 'Saturn',
+            mass: 5.6834e26, // kg
+            radius: 58232, // km
+            color: '#FAD5A5', // Wheat color
             atmosphere: {
                 layers: [
                     { height: 0, density: 0.19 },
                     { height: 50e3, density: 0.12 },
-                    { height: 100e3, density: 0.02 }
+                    { height: 100e3, density: 0.02 },
                 ],
-                color: 'rgba(250, 213, 165, 0.3)'
-            }
+                color: 'rgba(250, 213, 165, 0.3)',
+            },
+            orbit: {
+                semiMajorAxis: 9.537 * 149597870700, // meters
+                eccentricity: 0.054,
+                inclination: 2.485 * (Math.PI / 180), // radians
+                longitudeOfAscendingNode: 113.665 * (Math.PI / 180), // radians
+                argumentOfPeriapsis: 339.392 * (Math.PI / 180), // radians
+                meanAnomalyAtEpoch: 317.020 * (Math.PI / 180), // radians
+                epochTime: 0, // seconds
+            },
         },
         uranus: {
-            mass: 8.6813e25,
-            radius: 25362,
-            color: '#4FD0E3',
             name: 'Uranus',
+            mass: 8.6813e25, // kg
+            radius: 25362, // km
+            color: '#4FD0E3', // Cyan
             atmosphere: {
                 layers: [
                     { height: 0, density: 0.42 },
                     { height: 50e3, density: 0.2 },
-                    { height: 100e3, density: 0.05 }
+                    { height: 100e3, density: 0.05 },
                 ],
-                color: 'rgba(79, 208, 227, 0.3)'
-            }
+                color: 'rgba(79, 208, 227, 0.3)',
+            },
+            orbit: {
+                semiMajorAxis: 19.19 * 149597870700, // meters
+                eccentricity: 0.047,
+                inclination: 0.773 * (Math.PI / 180), // radians
+                longitudeOfAscendingNode: 74.006 * (Math.PI / 180), // radians
+                argumentOfPeriapsis: 96.998 * (Math.PI / 180), // radians
+                meanAnomalyAtEpoch: 142.238 * (Math.PI / 180), // radians
+                epochTime: 0, // seconds
+            },
         },
         neptune: {
-            mass: 1.02409e26,
-            radius: 24624,
-            color: '#4169E1',
             name: 'Neptune',
+            mass: 1.02409e26, // kg
+            radius: 24624, // km
+            color: '#4169E1', // Royal blue
             atmosphere: {
                 layers: [
                     { height: 0, density: 0.45 },
                     { height: 50e3, density: 0.25 },
-                    { height: 100e3, density: 0.08 }
+                    { height: 100e3, density: 0.08 },
                 ],
-                color: 'rgba(65, 105, 225, 0.3)'
-            }
-        }
+                color: 'rgba(65, 105, 225, 0.3)',
+            },
+            orbit: {
+                semiMajorAxis: 30.07 * 149597870700, // meters
+                eccentricity: 0.009,
+                inclination: 1.769 * (Math.PI / 180), // radians
+                longitudeOfAscendingNode: 131.784 * (Math.PI / 180), // radians
+                argumentOfPeriapsis: 265.646 * (Math.PI / 180), // radians
+                meanAnomalyAtEpoch: 256.228 * (Math.PI / 180), // radians
+                epochTime: 0, // seconds
+            },
+        },
     };
 
-    // Constants
-    static AU_TO_METERS = 149597870700; // 1 AU in meters
-    static GRAVITATIONAL_CONSTANT = 6.67430e-11; // m^3 kg^-1 s^-2
-
     // Position data from NASA JPL Horizons (2025-Sep-08 00:00:00.0000 TDB)
-    // Using real positions but will calculate stable circular orbit velocities
     static initialConditions = {
         sun: {
             position: { x: 0, y: 0 },
@@ -206,29 +274,6 @@ export class Body {
         }
     }
 
-    /**
-     * Calculate circular orbital velocity for a planet at its current position
-     */
-    static calculateCircularOrbitVelocity(position, centralMass) {
-        const distance = Math.sqrt(position.x * position.x + position.y * position.y);
-        
-        if (distance === 0) {
-            return { x: 0, y: 0 };
-        }
-
-        // Calculate orbital speed for circular orbit: v = sqrt(GM/r)
-        const orbitalSpeed = Math.sqrt(Body.GRAVITATIONAL_CONSTANT * centralMass / distance);
-        
-        // Velocity should be perpendicular to position vector
-        // For counterclockwise motion: vx = -orbitalSpeed * (y/r), vy = orbitalSpeed * (x/r)
-        const velocity = {
-            x: -orbitalSpeed * (position.y / distance),
-            y: orbitalSpeed * (position.x / distance)
-        };
-
-        return velocity;
-    }
-
     initializeFromPlanet(planetKey) {
         const planetData = Body.planetData[planetKey];
         const initialData = Body.initialConditions[planetKey];
@@ -255,6 +300,37 @@ export class Body {
 
         // Initialize trail for planets (not for Sun)
         this.trail = planetKey === 'sun' ? null : [];
+    }
+
+    static calculateCircularOrbitVelocity(position, centralMass) {
+        const r = Math.sqrt(position.x * position.x + position.y * position.y);
+        const v = Math.sqrt(Body.GRAVITATIONAL_CONSTANT * centralMass / r);
+        
+        // Velocity is perpendicular to position vector
+        return {
+            x: -v * position.y / r,
+            y: v * position.x / r
+        };
+    }
+
+    static getAtmosphereDensity(planet, altitude) {
+        if (!planet.atmosphere || !planet.atmosphere.layers) {
+            return 0;
+        }
+
+        const layers = planet.atmosphere.layers;
+        
+        // Find appropriate layer for this altitude
+        for (let i = 0; i < layers.length - 1; i++) {
+            if (altitude >= layers[i].height && altitude < layers[i + 1].height) {
+                // Linear interpolation between layers
+                const t = (altitude - layers[i].height) / (layers[i + 1].height - layers[i].height);
+                return layers[i].density * (1 - t) + layers[i + 1].density * t;
+            }
+        }
+        
+        // Above highest layer
+        return layers[layers.length - 1].density;
     }
 
     getMass() {
@@ -313,8 +389,14 @@ export class Body {
             }
         }
 
-        // If above the last layer, return the last layer's density
+        // If above the last layer, return 0 or the last layer's density
         const lastLayer = this.atmosphere.layers[this.atmosphere.layers.length - 1];
         return altitude >= lastLayer.height ? 0 : lastLayer.density;
     }
 }
+
+// Export BodyData for backward compatibility
+export const BodyData = Body.planetData;
+
+
+
