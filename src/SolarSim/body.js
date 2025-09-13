@@ -8,55 +8,115 @@ export class Body {
             mass: 1.9884e30, // ~1988410 x 10^24 kg
             radius: 695700, // km
             color: 'yellow',
-            name: 'Sun'
+            name: 'Sun',
+            atmosphere: null // No atmosphere for the Sun
         },
         mercury: {
             mass: 3.302e23, // 3.302 x10^23 kg
             radius: 2439.4, // km
             color: 'gray',
-            name: 'Mercury'
+            name: 'Mercury',
+            atmosphere: null // No significant atmosphere
         },
         venus: {
             mass: 4.8685e24, // 48.685 x10^23 kg
             radius: 6051.84, // km
             color: 'orange',
-            name: 'Venus'
+            name: 'Venus',
+            atmosphere: {
+                layers: [
+                    { height: 0, density: 65 }, // Surface: 65 kg/m³
+                    { height: 50e3, density: 10 }, // 50 km: 10 kg/m³
+                    { height: 100e3, density: 0.1 } // 100 km: 0.1 kg/m³
+                ],
+                color: 'rgba(255, 165, 0, 0.3)' // Orange haze
+            }
         },
         earth: {
             mass: 5.97219e24, // 5.97219 x10^24 kg
             radius: 6371.01, // km
             color: 'blue',
-            name: 'Earth'
+            name: 'Earth',
+            atmosphere: {
+                layers: [
+                    { height: 0, density: 1.225 }, // Surface: 1.225 kg/m³
+                    { height: 10e3, density: 0.4135 }, // 10 km: 0.4135 kg/m³
+                    { height: 50e3, density: 0.001027 }, // 50 km: 0.001027 kg/m³
+                    { height: 100e3, density: 0 } // 100 km: 0 kg/m³ (Kármán line)
+                ],
+                color: 'rgba(135, 206, 250, 0.5)' // Light blue atmosphere
+            }
         },
         mars: {
             mass: 6.4171e23, // 6.4171 x10^23 kg
             radius: 3389.92, // km
             color: 'red',
-            name: 'Mars'
+            name: 'Mars',
+            atmosphere: {
+                layers: [
+                    { height: 0, density: 0.020 }, // Surface: 0.020 kg/m³
+                    { height: 10e3, density: 0.007 }, // 10 km: 0.007 kg/m³
+                    { height: 50e3, density: 0 } // 50 km: 0 kg/m³
+                ],
+                color: 'rgba(255, 0, 0, 0.3)' // Red haze
+            }
         },
         jupiter: {
             mass: 1.89819e27, // 18.9819 x10^26 kg
             radius: 69911, // km
             color: '#DAA520', // Dark golden rod
-            name: 'Jupiter'
+            name: 'Jupiter',
+            atmosphere: {
+                layers: [
+                    { height: 0, density: 0.16 }, // Surface: 0.16 kg/m³
+                    { height: 50e3, density: 0.1 }, // 50 km: 0.1 kg/m³
+                    { height: 100e3, density: 0.01 } // 100 km: 0.01 kg/m³
+                ],
+                color: 'rgba(218, 165, 32, 0.3)' // Golden haze
+            }
         },
+        // Add similar atmospheric data for Saturn, Uranus, and Neptune
         saturn: {
-            mass: 5.6834e26, // 5.6834 x10^26 kg
-            radius: 58232, // km
-            color: '#FAD5A5', // Wheat color
-            name: 'Saturn'
+            mass: 5.6834e26,
+            radius: 58232,
+            color: '#FAD5A5',
+            name: 'Saturn',
+            atmosphere: {
+                layers: [
+                    { height: 0, density: 0.19 },
+                    { height: 50e3, density: 0.12 },
+                    { height: 100e3, density: 0.02 }
+                ],
+                color: 'rgba(250, 213, 165, 0.3)'
+            }
         },
         uranus: {
-            mass: 8.6813e25, // 86.813 x10^24 kg
-            radius: 25362, // km
-            color: '#4FD0E3', // Cyan
-            name: 'Uranus'
+            mass: 8.6813e25,
+            radius: 25362,
+            color: '#4FD0E3',
+            name: 'Uranus',
+            atmosphere: {
+                layers: [
+                    { height: 0, density: 0.42 },
+                    { height: 50e3, density: 0.2 },
+                    { height: 100e3, density: 0.05 }
+                ],
+                color: 'rgba(79, 208, 227, 0.3)'
+            }
         },
         neptune: {
-            mass: 1.02409e26, // 102.409 x10^24 kg
-            radius: 24624, // km
-            color: '#4169E1', // Royal blue
-            name: 'Neptune'
+            mass: 1.02409e26,
+            radius: 24624,
+            color: '#4169E1',
+            name: 'Neptune',
+            atmosphere: {
+                layers: [
+                    { height: 0, density: 0.45 },
+                    { height: 50e3, density: 0.25 },
+                    { height: 100e3, density: 0.08 }
+                ],
+                color: 'rgba(65, 105, 225, 0.3)'
+            }
         }
     };
 
@@ -138,6 +198,7 @@ export class Body {
         this.velocity = { x: 0, y: 0 };
         this.previousAcceleration = { x: 0, y: 0 };
         this.trail = null;
+        this.atmosphere = null;
 
         // If a planet key is provided, initialize with that planet's data
         if (planetKey && Body.planetData[planetKey]) {
@@ -182,18 +243,16 @@ export class Body {
         this.radius = planetData.radius;
         this.color = planetData.color;
         this.position = { ...initialData.position };
+        this.atmosphere = planetData.atmosphere; // Assign atmosphere data
         
         // Calculate circular orbit velocity if not the Sun
         if (planetKey === 'sun') {
             this.velocity = { ...initialData.velocity };
         } else {
-            // Calculate stable circular orbit velocity at this position
             const sunMass = Body.planetData.sun.mass;
             this.velocity = Body.calculateCircularOrbitVelocity(this.position, sunMass);
-            
-            console.log(`${this.name}: Orbital velocity = ${Math.sqrt(this.velocity.x**2 + this.velocity.y**2).toFixed(0)} m/s`);
         }
-        
+
         // Initialize trail for planets (not for Sun)
         this.trail = planetKey === 'sun' ? null : [];
     }
@@ -238,5 +297,24 @@ export class Body {
     getDisplayRadius() {
         // Logarithmic scaling for better visualization
         return Math.max(2, Math.log10(this.mass / 1e20) * 2);
+    }
+
+    getAtmosphereDensity(altitude) {
+        if (!this.atmosphere || !this.atmosphere.layers) return 0;
+
+        // Find the appropriate layer based on altitude
+        for (let i = 0; i < this.atmosphere.layers.length - 1; i++) {
+            const layer = this.atmosphere.layers[i];
+            const nextLayer = this.atmosphere.layers[i + 1];
+            if (altitude >= layer.height && altitude < nextLayer.height) {
+                // Interpolate density between layers
+                const t = (altitude - layer.height) / (nextLayer.height - layer.height);
+                return layer.density * (1 - t) + nextLayer.density * t;
+            }
+        }
+
+        // If above the last layer, return the last layer's density
+        const lastLayer = this.atmosphere.layers[this.atmosphere.layers.length - 1];
+        return altitude >= lastLayer.height ? 0 : lastLayer.density;
     }
 }
