@@ -3,6 +3,7 @@ import { UniversalCoordinateSystem } from '../CoordinateSystem.js';
 /**
  * Camera Controller
  * Manages camera modes, scaling, and coordinate system interactions
+ * Supports modes 1-3: Solar System, Inner Planets, Planet Focus
  */
 export class CameraController {
     constructor(canvasWidth, canvasHeight) {
@@ -71,13 +72,6 @@ export class CameraController {
             console.log(`Enhanced planet scaling applied for Mode 3:`);
             console.log(`  Planet Multiplier: ${5.0 * planetScaleBoost}x`);
             console.log(`  Minimum Size: ${Math.max(8.0, minPlanetPixels)} pixels`);
-        } else if (currentMode === 'ATMOSPHERE') {
-            // Mode 4: Much larger planets for atmospheric detail
-            this.coordSystem.planetSizeMultipliers[currentMode] = {
-                sunMultiplier: 0.001,
-                planetMultiplier: 20.0 * planetScaleBoost,
-                minPixelSize: Math.max(100.0, minPlanetPixels * 10)
-            };
         }
         
         console.log(`Enhanced planet scaling applied for Mode ${cameraMode}:`);
@@ -104,24 +98,11 @@ export class CameraController {
      * Update Camera System (from original _updateCamera method)
      */
     updateCamera(cameraMode, targetPlanet, bodies, planetScaleBoost, overridePlanetScaling, manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels) {
-        if (cameraMode === 4) {
-            // Ensure we're targeting the correct planet
-            const targetBody = bodies.find(body => body.name === targetPlanet);
-            
-            if (targetBody) {
-                this._focusOnPlanetSurface(targetBody);
-            } else {
-                console.warn(`Target planet ${targetPlanet} not found, defaulting to Earth`);
-                const earth = bodies.find(body => body.name === 'Earth');
-                if (earth) this._focusOnPlanetSurface(earth);
-            }
-        }
-        
         // Check if camera mode changed in editor during runtime
         if (this.coordSystem.cameraMode !== this._getCurrentModeString(cameraMode)) {
             let targetPlanetObj = null;
             
-            if ((cameraMode === 3 || cameraMode === 4) && targetPlanet) {
+            if (cameraMode === 3 && targetPlanet) {
                 targetPlanetObj = bodies.find(body => 
                     body.name.toLowerCase() === targetPlanet.toLowerCase()
                 );
@@ -135,8 +116,8 @@ export class CameraController {
             }
         }
 
-        // Apply real-time scaling updates (updated for mode 4)
-        if (cameraMode === 3 || cameraMode === 4) {
+        // Apply real-time scaling updates
+        if (cameraMode === 3) {
             this._applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels);
         }
         
@@ -144,8 +125,8 @@ export class CameraController {
             this._applyManualScaling(manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels);
         }
 
-        // Update camera position if following a planet in planet or atmosphere mode
-        if ((cameraMode === 3 || cameraMode === 4) && targetPlanet) {
+        // Update camera position if following a planet in planet mode
+        if (cameraMode === 3 && targetPlanet) {
             const target = bodies.find(body => 
                 body.name.toLowerCase() === targetPlanet.toLowerCase()
             );
@@ -158,39 +139,15 @@ export class CameraController {
     }
 
     /**
-     * Get Current Camera Mode as String (updated for mode 4)
+     * Get Current Camera Mode as String
      */
     _getCurrentModeString(cameraMode) {
         const modes = {
             1: 'SOLAR_SYSTEM',
             2: 'INNER_PLANETS',
-            3: 'PLANET',
-            4: 'ATMOSPHERE'
+            3: 'PLANET'
         };
         return modes[cameraMode];
-    }
-
-    _focusOnPlanetSurface(planet) {
-        // Set camera to focus on the specific planet's surface
-        this.coordSystem.setTarget(planet);
-        this.coordSystem.setCameraMode('ATMOSPHERE', planet);
-        this.coordSystem.setScale(this._getSurfaceScale(planet));
-    }
-
-    _getSurfaceScale(planet) {
-        // Return appropriate scale for surface view of specific planet
-        const surfaceScales = {
-            'Mercury': 1000,
-            'Venus': 1200,
-            'Earth': 1000,
-            'Mars': 800,
-            'Jupiter': 2000,
-            'Saturn': 1800,
-            'Uranus': 1500,
-            'Neptune': 1600
-        };
-        
-        return surfaceScales[planet.name] || 1000;
     }
 }
 

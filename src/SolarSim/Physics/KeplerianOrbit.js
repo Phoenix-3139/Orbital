@@ -198,14 +198,6 @@ export class KeplerianBody {
         const dy = this.position.y - otherBody.position.y;
         return Math.sqrt(dx * dx + dy * dy);
     }
-
-    /**
-     * Interface with Body class for atmospheric data
-     */
-    getAtmosphericSummary() {
-        const bodyData = Object.values(Body.planetData).find(data => data.name === this.name);
-        return bodyData?.atmosphere?.summary || null;
-    }
 }
 
 /**

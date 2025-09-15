@@ -16,7 +16,7 @@ export class UniversalCoordinateSystem {
         this.scales = {
             SOLAR_SYSTEM: 1.1e10,    // 11 million km per pixel
             INNER_PLANETS: 1e9,      // 1 million km per pixel  
-            PLANET: 1e7,             // 10,000 km per pixel
+            PLANET: 5e5,             // 10,000 km per pixel
             ATMOSPHERE: 1e4          // 10 km per pixel (for atmospheric layers)
         };
         

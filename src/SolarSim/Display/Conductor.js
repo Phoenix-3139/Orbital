@@ -1,4 +1,4 @@
-import {Component, Property} from '@wonderlandengine/api';
+import { Component, Property } from '@wonderlandengine/api';
 import { CanvasManager } from './Rendering/CanvasManager.js';
 import { SimulationController } from './Rendering/SimulationController.js';
 import { CameraController } from './Rendering/CameraController.js';
@@ -31,15 +31,11 @@ export class Drawer extends Component {
         atmosphereOpacity: Property.float(0.3),
         planetScaleBoost: Property.float(3.0),
         
-        // Camera Mode Controls (updated for mode 4)
-        cameraMode: Property.int(1), // 1=Solar, 2=Inner, 3=Planet, 4=Atmosphere
+        // Camera Mode Controls (modes 1-3)
+        cameraMode: Property.int(1), // 1=Solar, 2=Inner, 3=Planet
         targetPlanet: Property.string('Earth'),
         enableCameraSmoothing: Property.bool(false),
         manualZoom: Property.float(1.0),
-        
-        // Atmospheric Layer Properties (new)
-        showAtmosphericLayers: Property.bool(true),
-        layerDetail: Property.int(5), // Number of atmospheric layers to render
         
         // Manual Scaling Override Properties
         overridePlanetScaling: Property.bool(false),
@@ -109,7 +105,11 @@ export class Drawer extends Component {
             return;
         }
 
-        if (this.paused) return;
+        // Skip updates if paused
+        if (this.paused) {
+            console.log('Simulation is paused, skipping update');
+            return;
+        }
 
         try {
             // Update simulation with deltaTime
@@ -147,8 +147,7 @@ export class Drawer extends Component {
                 if (this.cameraMode >= 1 && this.cameraMode <= 3) {
                     this.planetRenderer.drawBodyWithAtmosphere(
                         body, this.showAtmospheres, this.atmosphereOpacity, this.useRealScale,
-                        this.minPlanetPixels, this.cameraMode, this.planetScaleBoost,
-                        this.showAtmosphericLayers, this.layerDetail
+                        this.minPlanetPixels, this.cameraMode, this.planetScaleBoost
                     );
                     
                     // Show orbits
@@ -180,14 +179,13 @@ export class Drawer extends Component {
     }
 
     /**
-     * Get Current Camera Mode as String (updated)
+     * Get Current Camera Mode as String (modes 1-3 only)
      */
     _getCurrentModeString() {
         const modes = {
             1: 'SOLAR_SYSTEM',
             2: 'INNER_PLANETS',
-            3: 'PLANET',
-            4: 'ATMOSPHERE'
+            3: 'PLANET'
         };
         return modes[this.cameraMode];
     }
@@ -210,18 +208,11 @@ export class Drawer extends Component {
     }
 
     /**
-     * Set target planet and clear surface cache if changing planets in surface mode
+     * Set target planet
      */
     setTargetPlanet(planetName) {
         const previousPlanet = this.targetPlanet;
         this.targetPlanet = planetName;
-        
-        // Clear surface cache when changing planets in surface mode
-        if (this.cameraMode === 4 && previousPlanet !== planetName && this.planetRenderer?.surfaceRenderer) {
-            this.planetRenderer.surfaceRenderer.clearCache();
-            console.log(`Cleared surface cache for planet change: ${previousPlanet} -> ${planetName}`);
-        }
-        
         console.log(`Target planet changed to: ${planetName}`);
     }
 }
