@@ -5,10 +5,8 @@ import {PlanetarySystem} from '../../Physics/KeplerianOrbit.js';
  * Manages the physics simulation, time progression, and body states
  */
 export class SimulationController {
-    constructor(timeMultiplier = 2000000, maxTrailLength = 4000) {
+    constructor(timeMultiplier = 2000000) {
         this.timeMultiplier = timeMultiplier;
-        this.maxTrailLength = maxTrailLength;
-        
         this.simulationTime = 0;
         this.bodies = null;
         this.simulationInterval = null;
@@ -35,7 +33,13 @@ export class SimulationController {
     updateKeplerianOrbits() {
         this.bodies.forEach(body => {
             body.updatePosition(this.simulationTime);
-            body.addToTrail(this.maxTrailLength);
+
+            // Dynamic trail length: cover one full orbit + 15% extra
+            const period = body.getOrbitalPeriod();
+            const dt = this.timeMultiplier * 0.016; // Simulation step
+            const trailPoints = Math.ceil((period / dt) * 1.15);
+
+            body.addToTrail(trailPoints);
         });
     }
 

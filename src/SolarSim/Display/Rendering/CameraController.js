@@ -31,6 +31,8 @@ export class CameraController {
             }
         }
         
+
+
         // Set camera mode using editor property (1, 2, or 3)
         this.coordSystem.setCameraModeByNumber(cameraMode, targetPlanetObj);
         
@@ -97,7 +99,7 @@ export class CameraController {
     /**
      * Update Camera System (from original _updateCamera method)
      */
-    updateCamera(cameraMode, targetPlanet, bodies, planetScaleBoost, overridePlanetScaling, manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels) {
+    updateCamera(cameraMode, targetPlanet, bodies, planetScaleBoost, overridePlanetScaling, manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels, manualZoom) {
         // Check if camera mode changed in editor during runtime
         if (this.coordSystem.cameraMode !== this._getCurrentModeString(cameraMode)) {
             let targetPlanetObj = null;
@@ -120,6 +122,11 @@ export class CameraController {
         if (cameraMode === 3) {
             this._applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels);
         }
+
+        if(cameraMode == 4)
+        {
+            this._applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels);
+        }
         
         if (overridePlanetScaling) {
             this._applyManualScaling(manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels);
@@ -136,6 +143,11 @@ export class CameraController {
                 this.coordSystem.updateCamera();
             }
         }
+
+        // Adaptive scaling for mode 3
+        if (cameraMode === 3 && targetPlanet) {
+            this._configurePlanetFocusView(targetPlanet, bodies, planetScaleBoost, manualZoom);
+        }
     }
 
     /**
@@ -145,10 +157,43 @@ export class CameraController {
         const modes = {
             1: 'SOLAR_SYSTEM',
             2: 'INNER_PLANETS',
-            3: 'PLANET'
+            3: 'PLANET',
+            4: 'SURFACE'
         };
         return modes[cameraMode];
+    }
+
+    /**
+     * Adaptive planet focus for mode 3.
+     */
+    _configurePlanetFocusView(targetPlanetName, bodies, planetScaleBoost, manualZoom) {
+        const planet = bodies.find(body => body.name.toLowerCase() === targetPlanetName.toLowerCase());
+        if (!planet) {
+            console.warn(`Planet ${targetPlanetName} not found for focus mode`);
+            return;
+        }
+
+        // Use custom scale if available, else fallback to default
+        const scale = planetScales[planet.name.toLowerCase()] || 5e5;
+        const metersPerPixel = scale / (planetScaleBoost * manualZoom);
+
+        // Center camera on planet
+        this.coordSystem.setCameraPosition(planet.position.x, planet.position.y);
+        this.coordSystem.setScale(metersPerPixel);
+        this.coordSystem.cameraMode = 'PLANET';
     }
 }
 
 export default CameraController;
+
+const planetScales = {
+    mercury: 1e7,
+    venus: 1e7,
+    earth: 1e7,
+    mars: 1e7,
+    jupiter: 1e7,   // Increased scale, Jupiter appears much smaller
+    saturn: 1e7,    // Increased scale, Saturn appears much smaller
+    uranus: 1e7,    // Increased scale, Uranus appears much smaller
+    neptune: 1e7,   // Increased scale, Neptune appears much smaller
+    
+};

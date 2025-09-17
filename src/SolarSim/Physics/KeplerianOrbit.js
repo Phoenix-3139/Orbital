@@ -165,7 +165,7 @@ export class KeplerianBody {
     /**
      * Add Current Position to Orbital Trail
      */
-    addToTrail(maxTrailLength = 2000) {
+    addToTrail(maxTrailLength) {
         if (this.name !== 'Sun') {
             this.trail.push({ x: this.position.x, y: this.position.y });
             if (this.trail.length > maxTrailLength) {

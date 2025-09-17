@@ -13,35 +13,23 @@ export class Drawer extends Component {
         // Rendering Properties
         material: Property.material(),
         bgColor: Property.string('#0a0a0a'),
-        
-        // Simulation Control Properties
         paused: Property.bool(false),
         timeMultiplier: Property.float(2000000),
-        
-        // Visual Display Properties
         showOrbits: Property.bool(true),
-        maxTrailLength: Property.int(4000),
+        // maxTrailLength: Property.int(4000), // REMOVED: trail length is now dynamic
         enablePerturbations: Property.bool(false),
         showOuterPlanets: Property.bool(true),
         useRealScale: Property.bool(true),
-        
-        // Enhanced Planet Rendering Properties
         showAtmospheres: Property.bool(true),
         atmosphereOpacity: Property.float(0.3),
         planetScaleBoost: Property.float(3.0),
-        
-        // Camera Mode Controls (modes 1-3)
-        cameraMode: Property.int(1), // 1=Solar, 2=Inner, 3=Planet
+        cameraMode: Property.int(1),
         targetPlanet: Property.string('Earth'),
         enableCameraSmoothing: Property.bool(false),
         manualZoom: Property.float(1.0),
-        
-        // Manual Scaling Override Properties
         overridePlanetScaling: Property.bool(false),
         manualSunMultiplier: Property.float(0.1),
         manualPlanetMultiplier: Property.float(50.0),
-        
-        // Minimum Display Properties
         minPlanetPixels: Property.float(2.0),
     };
 
@@ -105,7 +93,7 @@ export class Drawer extends Component {
             this.cameraController.updateCamera(
                 this.cameraMode, this.targetPlanet, this.simulationController.bodies,
                 this.planetScaleBoost, this.overridePlanetScaling, this.manualSunMultiplier,
-                this.manualPlanetMultiplier, this.minPlanetPixels
+                this.manualPlanetMultiplier, this.minPlanetPixels, this.manualZoom
             );
             
             // Render frame
