@@ -432,6 +432,22 @@ export class Body {
             color: this.atmosphere.color || 'rgba(135, 206, 250, 0.3)'
         };
     }
+
+            /**
+    * Maps an atmosphere density value to a canvas transparency (alpha) value.
+    * @param {number} density - The atmosphere density (double).
+    * @returns {number} - Transparency value between 0 (fully transparent) and 1 (fully opaque).
+    */
+    static densityToAlpha(density) {
+        // Example mapping: normalize density to a reasonable range for alpha
+        // You can adjust maxDensity based on your simulation's expected max
+        const maxDensity = 1.225; // Earth's surface density (kg/m^3)
+        let alpha = density / maxDensity;
+        // Clamp between 0 and 1
+        if (alpha < 0) alpha = 0;
+        if (alpha > 1) alpha = 1;
+        return alpha;
+    }
 }
 
 // Backward compatibility export

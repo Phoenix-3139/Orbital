@@ -144,8 +144,7 @@ export class Drawer extends Component {
                 // Render bodies for modes 1, 2, 3
                 if (this.cameraMode >= 1 && this.cameraMode <= 3) {
                     this.planetRenderer.drawBodyWithAtmosphere(
-                        body, this.showAtmospheres, this.atmosphereOpacity, this.useRealScale,
-                        this.minPlanetPixels, this.cameraMode, this.planetScaleBoost
+                        body, this.useRealScale, this.minPlanetPixels, this.cameraMode, this.planetScaleBoost
                     );
                     
                     // Show orbits
