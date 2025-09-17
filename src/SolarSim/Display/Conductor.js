@@ -3,7 +3,6 @@ import { CanvasManager } from './Rendering/CanvasManager.js';
 import { SimulationController } from './Rendering/SimulationController.js';
 import { CameraController } from './Rendering/CameraController.js';
 import { PlanetRenderer } from './Rendering/Planetary Render/PlanetRenderer.js';
-import { AtmosphereRenderer } from './Rendering/Planetary Render/AtmosphereRenderer.js';
 import { GridRenderer } from './Rendering/GridRenderer.js';
 import { UIRenderer } from './Rendering/UIRenderer.js';
 
@@ -65,11 +64,8 @@ export class Drawer extends Component {
             console.log('Initializing CameraController...');
             this.cameraController = new CameraController(this.canvasManager.canvas.width, this.canvasManager.canvas.height);
             
-            console.log('Initializing AtmosphereRenderer...');
-            this.atmosphereRenderer = new AtmosphereRenderer(this.canvasManager, this.cameraController.coordSystem);
-            
             console.log('Initializing PlanetRenderer...');
-            this.planetRenderer = new PlanetRenderer(this.canvasManager, this.cameraController.coordSystem, this.atmosphereRenderer);
+            this.planetRenderer = new PlanetRenderer(this.canvasManager, this.cameraController.coordSystem);
             
             console.log('Initializing GridRenderer...');
             this.gridRenderer = new GridRenderer(this.canvasManager, this.cameraController.coordSystem);
@@ -105,6 +101,16 @@ export class Drawer extends Component {
             return;
         }
 
+         // Update camera
+            this.cameraController.updateCamera(
+                this.cameraMode, this.targetPlanet, this.simulationController.bodies,
+                this.planetScaleBoost, this.overridePlanetScaling, this.manualSunMultiplier,
+                this.manualPlanetMultiplier, this.minPlanetPixels
+            );
+            
+            // Render frame
+            this._render();
+
         // Skip updates if paused
         if (this.paused) {
             console.log('Simulation is paused, skipping update');
@@ -115,15 +121,7 @@ export class Drawer extends Component {
             // Update simulation with deltaTime
             this.simulationController.updateSimulation(dt);
             
-            // Update camera
-            this.cameraController.updateCamera(
-                this.cameraMode, this.targetPlanet, this.simulationController.bodies,
-                this.planetScaleBoost, this.overridePlanetScaling, this.manualSunMultiplier,
-                this.manualPlanetMultiplier, this.minPlanetPixels
-            );
-            
-            // Render frame
-            this._render();
+           
             
         } catch (error) {
             console.error('Error during update:', error);

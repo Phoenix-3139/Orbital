@@ -7,10 +7,9 @@ import { PlanetLabelRenderer } from './PlanetLabelRenderer.js';
  * Modes: 1 (Solar System), 2 (Inner Planets), 3 (Planet Focus)
  */
 export class PlanetRenderer {
-    constructor(canvasManager, coordSystem, atmosphereRenderer) {
+    constructor(canvasManager, coordSystem) {
         this.canvasManager = canvasManager;
         this.coordSystem = coordSystem;
-        this.atmosphereRenderer = atmosphereRenderer;
         
         // Initialize specialized renderers
         this.sphereRenderer = new PlanetSphereRenderer(canvasManager, coordSystem);
@@ -36,23 +35,12 @@ export class PlanetRenderer {
         // Draw planet sphere
         this.sphereRenderer.drawPlanetSphere(body, screenPos, planetRadius, cameraMode);
 
-        // Draw atmosphere halo
-        const atmosphericRadius = this.atmosphereRenderer.drawAtmosphere(
-            body, screenPos, planetRadius, showAtmospheres, atmosphereOpacity,
-            cameraMode, useRealScale, showAtmosphericLayers, layerDetail
-        );
-
         // Draw labels
         if (this.labelRenderer.shouldDrawLabels(planetRadius, cameraMode)) {
             this.labelRenderer.drawPlanetLabels(
-                body, screenPos, planetRadius, atmosphericRadius, useRealScale, cameraMode
+                body, screenPos, planetRadius, null, useRealScale, cameraMode
             );
         }
-    }
-
-    _planetHasAtmosphere(planetName) {
-        const atmosphericPlanets = ['Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Titan'];
-        return atmosphericPlanets.includes(planetName);
     }
 }
 
