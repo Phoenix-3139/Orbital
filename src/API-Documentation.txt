@@ -170,10 +170,8 @@
 //     // enablePerturbations: (bool) Enable orbit changes
 //     // showOuterPlanets: (bool) Show outer planets
 //     // useRealScale: (bool) Use physical scale
-//     // showAtmospheres: (bool) Show atmospheres
-//     // atmosphereOpacity: (float) Atmosphere transparency
 //     // planetScaleBoost: (float) Planet size multiplier
-//     // cameraMode: (int) 1=Solar, 2=Inner, 3=Planet, 4=Atmosphere
+//     // cameraMode: (int) 1=Solar, 2=Inner, 3=Planet
 //     // targetPlanet: (string) Planet to focus
 //     // enableCameraSmoothing: (bool) Smooth camera
 //     // manualZoom: (float) Zoom factor
@@ -249,8 +247,6 @@
 //   drawUI(
 //     cameraMode,                 // (int) Camera mode
 //     useRealScale,               // (bool) Use physical scale
-//     showAtmospheres,            // (bool) Show atmospheres
-//     atmosphereOpacity,          // (float) Atmosphere transparency
 //     planetScaleBoost,           // (float) Planet size multiplier
 //     timeMultiplier,             // (float) Simulation speed
 //     simulationTime,             // (seconds) Current time
@@ -258,7 +254,7 @@
 //     overridePlanetScaling,      // (bool) Manual scaling
 //     bodies                      // (array) Celestial bodies
 //   )
-//   _drawPlanetModeInfo(ctx, canvas, targetPlanet, planetScaleBoost, showAtmospheres, bodies, cameraMode)
+//   _drawPlanetModeInfo(ctx, canvas, targetPlanet, planetScaleBoost, bodies, cameraMode)
 //   _drawInnerPlanetModeInfo(ctx, canvas)
 //   _drawControlHints(ctx, canvas)
 //   _formatPressure(pressure)     // pressure: (Pa)
@@ -293,14 +289,10 @@
 //   constructor(canvasManager, coordSystem)
 //   drawBodyWithAtmosphere(
 //     body,                       // (Body) Celestial body
-//     showAtmospheres,            // (bool) Show atmospheres
-//     atmosphereOpacity,          // (float) Atmosphere transparency
 //     useRealScale,               // (bool) Use physical scale
 //     minPlanetPixels,            // (float) Minimum planet size
 //     cameraMode,                 // (int) Camera mode
-//     planetScaleBoost,           // (float) Planet size multiplier
-//     showAtmosphericLayers=true, // (bool) Show layers
-//     layerDetail=5               // (int) Layer detail
+//     planetScaleBoost           // (float) Planet size multiplier
 //   )
 
 // --- Display/Rendering/Planetary Render/PlanetSphereRenderer.js ---
@@ -335,13 +327,6 @@
 //     planetRadius,               // (pixels) Planet radius
 //     cameraMode                  // (int) Camera mode
 //   )
-
-// --- Display/Rendering/Planetary Render/AtmosphericRenderer.js ---
-// export class AtmosphericRenderer
-//   drawAtmosphere(screenPos, planetRadius, atmosphere)
-//     // screenPos: ({x, y}) Screen position of planet
-//     // planetRadius: (pixels) Radius of planet on screen
-//     // atmosphere: (object) Atmosphere data (layers, color, etc.)
 
 // --- SandboxInput/button.js ---
 // export function hapticFeedback(

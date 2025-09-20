@@ -10,9 +10,9 @@ export class UIRenderer {
     }
 
     /**
-     * Draw complete UI overlay (from original _drawUI)
+     * Draw complete UI overlay
      */
-    drawUI(cameraMode, useRealScale, showAtmospheres, atmosphereOpacity, planetScaleBoost,
+    drawUI(cameraMode, useRealScale, planetScaleBoost,
            timeMultiplier, simulationTime, targetPlanet, overridePlanetScaling, bodies) {
         
         const ctx = this.canvasManager.ctx;
@@ -27,12 +27,11 @@ export class UIRenderer {
         const lineHeight = 15;
         const x = 10;
 
-        // Camera Mode Information (updated for mode 4)
+        // Camera Mode Information
         const modeNames = {
             1: 'Solar System',
             2: 'Inner Planets', 
-            3: 'Planet (Enhanced)',
-            4: 'Atmosphere (Surface)'
+            3: 'Planet (Enhanced)'
         };
         const modeText = modeNames[cameraMode] || 'Unknown';
         
@@ -48,28 +47,14 @@ export class UIRenderer {
         ctx.fillText(`Planet Scaling: Sun ${multipliers.sunMultiplier}x, Planets ${multipliers.planetMultiplier}x`, x, y);
         y += lineHeight;
 
-        // Mode 3 OR 4 specific information (updated)
-        if (cameraMode === 3 || cameraMode === 4) {
+        // Mode 3 specific information
+        if (cameraMode === 3) {
             y += 5; // Small spacing
             ctx.fillText(`Planet Scale Boost: ${planetScaleBoost}x`, x, y);
             y += lineHeight;
 
-            ctx.fillText(`Atmosphere Rendering: ${showAtmospheres ? 'ON' : 'OFF'}`, x, y);
-            y += lineHeight;
-
-            if (showAtmospheres) {
-                ctx.fillText(`Atmosphere Opacity: ${(atmosphereOpacity * 100).toFixed(0)}%`, x, y);
-                y += lineHeight;
-            }
-
             if (targetPlanet) {
                 ctx.fillText(`Following: ${targetPlanet}`, x, y);
-                y += lineHeight;
-            }
-
-            // Mode 4 specific info
-            if (cameraMode === 4) {
-                ctx.fillText(`Surface/Atmospheric Detail Mode`, x, y);
                 y += lineHeight;
             }
         }
@@ -109,9 +94,9 @@ export class UIRenderer {
             y += lineHeight;
         }
 
-        // Mode-specific information sections (updated)
-        if ((cameraMode === 3 || cameraMode === 4) && targetPlanet) {
-            this._drawPlanetModeInfo(ctx, canvas, targetPlanet, planetScaleBoost, showAtmospheres, bodies, cameraMode);
+        // Mode-specific information sections
+        if (cameraMode === 3 && targetPlanet) {
+            this._drawPlanetModeInfo(ctx, canvas, targetPlanet, planetScaleBoost, bodies, cameraMode);
         } else if (cameraMode === 2) {
             this._drawInnerPlanetModeInfo(ctx, canvas);
         }
@@ -121,20 +106,15 @@ export class UIRenderer {
     }
 
     /**
-     * Draw planet mode specific information (updated for mode 4)
+     * Draw planet mode specific information
      */
-    _drawPlanetModeInfo(ctx, canvas, targetPlanet, planetScaleBoost, showAtmospheres, bodies, cameraMode) {
+    _drawPlanetModeInfo(ctx, canvas, targetPlanet, planetScaleBoost, bodies, cameraMode) {
         const rightX = canvas.width - 320;
         let y = canvas.height - 200;
 
         ctx.fillStyle = 'rgba(100, 255, 100, 0.9)';
         ctx.font = '13px Arial';
-        
-        if (cameraMode === 4) {
-            ctx.fillText(`=== ${targetPlanet.toUpperCase()} ATMOSPHERE ===`, rightX, y);
-        } else {
-            ctx.fillText(`=== ${targetPlanet.toUpperCase()} MODE ===`, rightX, y);
-        }
+        ctx.fillText(`=== ${targetPlanet.toUpperCase()} MODE ===`, rightX, y);
         y += 18;
 
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -173,8 +153,6 @@ export class UIRenderer {
             ctx.fillText('Enhanced Rendering:', rightX, y);
             y += 15;
             ctx.fillText(`  Scale Boost: ${planetScaleBoost}x`, rightX, y);
-            y += 15;
-            ctx.fillText(`  Atmospheres: ${showAtmospheres ? 'ON' : 'OFF'}`, rightX, y);
         }
     }
 
@@ -218,10 +196,8 @@ export class UIRenderer {
         ctx.font = '10px Arial';
 
         const hints = [
-            '• planetScaleBoost: Planet size multiplier for Mode 3/4',
-            '• showAtmospheres: Enable atmospheric rendering',
-            '• atmosphereOpacity: Atmosphere transparency (0-1)',
-            '• cameraMode: 1=Solar, 2=Inner, 3=Planet, 4=Atmosphere'
+            '• planetScaleBoost: Planet size multiplier for Mode 3',
+            '• cameraMode: 1=Solar, 2=Inner, 3=Planet'
         ];
 
         hints.forEach(hint => {

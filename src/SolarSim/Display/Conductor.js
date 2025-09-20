@@ -20,8 +20,6 @@ export class Drawer extends Component {
         enablePerturbations: Property.bool(false),
         showOuterPlanets: Property.bool(true),
         useRealScale: Property.bool(true),
-        showAtmospheres: Property.bool(true),
-        atmosphereOpacity: Property.float(0.3),
         planetScaleBoost: Property.float(3.0),
         cameraMode: Property.int(1),
         targetPlanet: Property.string('Earth'),
@@ -144,8 +142,8 @@ export class Drawer extends Component {
             
             // Draw UI
             this.uiRenderer.drawUI(
-                this.cameraMode, this.useRealScale, this.showAtmospheres, this.atmosphereOpacity,
-                this.planetScaleBoost, this.timeMultiplier, this.simulationController.simulationTime,
+                this.cameraMode, this.useRealScale, this.planetScaleBoost,
+                this.timeMultiplier, this.simulationController.simulationTime,
                 this.targetPlanet, this.overridePlanetScaling, this.simulationController.bodies
             );
             

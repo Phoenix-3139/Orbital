@@ -1,6 +1,5 @@
 import { PlanetSphereRenderer } from './PlanetSphereRenderer.js';
 import { PlanetLabelRenderer } from './PlanetLabelRenderer.js';
-import { AtmosphericRenderer } from './AtmosphericRenderer.js';
 
 /**
  * Planet Renderer (Coordinator)
@@ -15,7 +14,6 @@ export class PlanetRenderer {
         // Initialize specialized renderers
         this.sphereRenderer = new PlanetSphereRenderer(canvasManager, coordSystem);
         this.labelRenderer = new PlanetLabelRenderer(canvasManager);
-        this.atmosphericRenderer = new AtmosphericRenderer(canvasManager, coordSystem);
     }
 
     /**
@@ -31,12 +29,7 @@ export class PlanetRenderer {
             body, useRealScale, minPlanetPixels, cameraMode, planetScaleBoost
         );
 
-        // Draw atmosphere layers FIRST (behind the planet)
-        if (cameraMode === 3 && body.name) {
-            this.atmosphericRenderer.drawAtmosphere(screenPos, planetRadius, body.name);
-        }
-
-        // Draw planet sphere ON TOP of atmosphere 
+        // Draw planet sphere
         this.sphereRenderer.drawPlanetSphere(body, screenPos, planetRadius, cameraMode);
 
         // Draw labels

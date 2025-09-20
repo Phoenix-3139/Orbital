@@ -9,49 +9,10 @@ export class GridRenderer {
     }
 
     /**
-     * Draw reference grid (from original _drawReferenceGrid)
+     * Draw reference grid
      */
     drawReferenceGrid() {
-        const cameraMode = this.coordSystem.getCameraMode();
-        
-        // Don't draw orbital grids in atmosphere/surface mode
-        if (cameraMode === 'ATMOSPHERE') {
-            this._drawSurfaceGrid();
-            return;
-        }
-        
-        // Original grid drawing for other modes
         this._drawSpaceGrid();
-    }
-
-    _drawSurfaceGrid() {
-        const ctx = this.canvasManager.ctx;
-        const canvas = this.canvasManager.canvas;
-        
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.lineWidth = 0.5;
-        
-        // Draw simple horizon grid for surface mode
-        const gridSpacing = 50;
-        
-        // Horizontal lines
-        for (let y = 0; y < canvas.height; y += gridSpacing) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(canvas.width, y);
-            ctx.stroke();
-        }
-        
-        // Vertical lines
-        for (let x = 0; x < canvas.width; x += gridSpacing) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, canvas.height);
-            ctx.stroke();
-        }
-        
-        ctx.restore();
     }
 
     _drawSpaceGrid() {
@@ -97,14 +58,9 @@ export class GridRenderer {
     }
 
     /**
-     * Draw orbital trail (from original _drawTrail)
+     * Draw orbital trail
      */
     drawTrail(body, showOrbits) {
-        const cameraMode = this.coordSystem.getCameraMode();
-        
-        // Don't draw orbital trails in atmosphere mode
-        if (cameraMode === 'ATMOSPHERE' || !showOrbits) return;
-
         if (!showOrbits || !body.trail || body.trail.length < 2) {
             return;
         }

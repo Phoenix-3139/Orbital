@@ -158,7 +158,6 @@ export class CameraController {
             1: 'SOLAR_SYSTEM',
             2: 'INNER_PLANETS',
             3: 'PLANET',
-            4: 'SURFACE'
         };
         return modes[cameraMode];
     }
