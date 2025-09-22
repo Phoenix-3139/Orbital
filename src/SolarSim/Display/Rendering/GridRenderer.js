@@ -81,7 +81,8 @@ export class GridRenderer {
             }
         }
 
-        if (screenPoints.length < 2) return;
+        if (screenPoints.length < 2) 
+            {return;}
 
         // Draw the trail
         const trailColor = this._colorToRgba(body.color, 0.4);

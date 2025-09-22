@@ -55,7 +55,7 @@ export class UniversalCoordinateSystem {
      /**
      * Convert a 1D world length (meters) to screen length (pixels) for a given mode.
      */
-    worldtoScreen1D(length,mode)
+    worldtoScreen1D(length, mode)
     {
         const scaledLength = length*this.scales[mode];
         return scaledLength;
@@ -64,7 +64,7 @@ export class UniversalCoordinateSystem {
      /**
      * Convert a 1D screen length (pixels) to world length (meters) for a given mode.
      */
-    screentoWorld1D(length,mode)
+    screentoWorld1D(length, mode)
     {
         const scaledLength = length/this.scales[mode];
         return scaledLength;

@@ -129,7 +129,7 @@ export class Drawer extends Component {
             visibleBodies.forEach(body => {
                 // Render bodies for modes 1, 2, 3
                 if (this.cameraMode >= 1 && this.cameraMode <= 3) {
-                    this.planetRenderer.drawBodyWithAtmosphere(
+                    this.planetRenderer.drawBody(
                         body, this.useRealScale, this.minPlanetPixels, this.cameraMode, this.planetScaleBoost
                     );
                     

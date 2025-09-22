@@ -190,9 +190,9 @@ const planetScales = {
     venus: 1e7,
     earth: 1e7,
     mars: 1e7,
-    jupiter: 1e7,   // Increased scale, Jupiter appears much smaller
-    saturn: 1e7,    // Increased scale, Saturn appears much smaller
-    uranus: 1e7,    // Increased scale, Uranus appears much smaller
-    neptune: 1e7,   // Increased scale, Neptune appears much smaller
+    jupiter: 1e7,   
+    saturn: 1e7,    
+    uranus: 1e7,    
+    neptune: 1e7,   
     
 };

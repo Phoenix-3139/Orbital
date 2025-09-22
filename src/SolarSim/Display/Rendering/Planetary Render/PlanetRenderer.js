@@ -20,7 +20,7 @@ export class PlanetRenderer {
      * Main rendering method - delegates to appropriate renderer
      * Modes 1, 2, 3: Normal sphere rendering
      */
-    drawBodyWithAtmosphere(body, useRealScale, minPlanetPixels, cameraMode, planetScaleBoost) {
+    drawBody(body, useRealScale, minPlanetPixels, cameraMode, planetScaleBoost) {
         // Get screen position
         const screenPos = this.coordSystem.worldToScreen(body.position.x, body.position.y);
         
