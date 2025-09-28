@@ -37,7 +37,7 @@ export class SimulationController {
             // Dynamic trail length: cover one full orbit + 15% extra
             const period = body.getOrbitalPeriod();
             const dt = this.timeMultiplier * 0.016; // Simulation step
-            const trailPoints = Math.ceil((period / dt) * 1.15);
+            const trailPoints = Math.ceil((period / dt) * 1.2);
 
             body.addToTrail(trailPoints);
         });
