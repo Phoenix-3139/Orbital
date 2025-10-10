@@ -26,8 +26,7 @@ export class CameraController {
             );
             
             if (!targetPlanetObj) {
-                console.warn(`Target planet "${targetPlanet}" not found. Available planets:`, 
-                    bodies.map(b => b.name).join(', '));
+                console.warn(`Target planet "${targetPlanet}" not found in bodies list.`);
             }
         }
         
