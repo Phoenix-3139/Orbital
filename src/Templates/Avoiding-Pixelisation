@@ -1,0 +1,115 @@
+===== HOW TO AVOID PIXELISATION (BLURRY/BLOCKY DRAWINGS) =====
+
+WHAT IS PIXELISATION?
+- Your drawing looks blurry, blocky, or "pixelated"
+- Text is hard to read
+- Circles look like squares with jagged edges
+- Lines look chunky instead of smooth
+
+WHY DOES THIS HAPPEN?
+Think of it like trying to display a huge detailed poster on a tiny TV screen:
+- Your canvas is big (like a 2048x2048 detailed drawing)
+- But your 3D plane mesh is tiny (like a postage stamp)
+- The computer has to "squish" your big drawing to fit the tiny plane
+- All that detail gets compressed and looks pixelated
+
+THE REAL PROBLEM:
+Your 3D plane mesh is TOO SMALL for your canvas size!
+
+HOW TO FIX IT:
+
+1. MAKE YOUR 3D PLANE BIGGER (BEST FIX)
+   - In Wonderland Editor, select your plane object
+   - Increase the Scale values (try 2, 3, 4, or even 10)
+   - This makes your plane bigger so the canvas detail shows properly
+   - IN CODE: You can also scale it with transform.scaling
+
+2. OR MAKE YOUR CANVAS SMALLER (IF PLANE MUST STAY SMALL)
+   - If your plane needs to stay tiny, reduce canvas size
+   - Instead of 1024x1024, try 256x256 or 512x512
+   - Less detail, but it will look cleaner on the small plane
+   - IN CODE: Change canvasWidth and canvasHeight properties
+
+3. MATCH CANVAS SIZE TO PLANE SIZE
+   - Big plane = big canvas (1024x1024 or 2048x2048)
+   - Small plane = small canvas (256x256 or 512x512)
+   - Medium plane = medium canvas (512x512 or 1024x1024)
+   - They should be proportional to each other
+
+4. USE "POWER OF 2" SIZES
+   - Use sizes like: 256, 512, 1024, 2048, 4096
+   - Don't use: 300, 500, 1000, 1500
+   - Computers handle power-of-2 sizes much better
+   - They're faster and look better
+
+5. KEEP CANVAS AND PLANE THE SAME SHAPE
+   - If your canvas is 512x512 (square)...
+   - Make sure your 3D plane is also square shaped
+   - If your plane is rectangular, use rectangular canvas (like 1024x512)
+   - Mismatched shapes cause stretching and distortion
+
+6. MAKE TEXT AND LINES BIGGER FOR SMALL PLANES
+   - If you must keep the plane small, make elements bigger
+   - Use 24px+ fonts instead of 12px
+   - Use 3-5 pixel thick lines instead of 1 pixel
+   - Bigger elements survive the compression better
+
+REAL WORLD EXAMPLE:
+Making a readable sign in VR:
+
+WRONG WAY:
+- Canvas: 2048x2048 pixels (huge detail)
+- 3D Plane: Scale 0.1, 0.1, 1 (tiny postage stamp)
+- Result: All that detail gets squished = pixelated mess
+
+RIGHT WAY OPTION 1 (Make plane bigger):
+- Canvas: 2048x2048 pixels (huge detail)
+- 3D Plane: Scale 5, 5, 1 (big billboard size)
+- Result: Crystal clear, all detail visible
+
+RIGHT WAY OPTION 2 (Make canvas smaller):
+- Canvas: 512x512 pixels (moderate detail)
+- 3D Plane: Scale 0.1, 0.1, 1 (tiny postage stamp)
+- Result: Clean but less detailed
+
+PERFORMANCE vs QUALITY BALANCE:
+
+FOR SMALL UI ELEMENTS:
+- Small plane scale (0.5, 0.5, 1)
+- Small canvas (256x256 or 512x512)
+- Keep it fast and clean
+
+FOR LARGE DISPLAYS/BILLBOARDS:
+- Large plane scale (5, 5, 1 or bigger)
+- Large canvas (1024x1024 or 2048x2048)
+- Maximum quality for big viewing
+
+FOR MEDIUM INTERACTIVE PANELS:
+- Medium plane scale (2, 2, 1)
+- Medium canvas (1024x1024)
+- Good balance of quality and performance
+
+QUICK FIXES CHECKLIST:
+□ First try: Double your plane's scale values
+□ If plane must stay small: Halve your canvas size
+□ Use power-of-2 canvas dimensions only
+□ Match canvas shape to plane shape (both square or both rectangle)
+□ Make fonts and lines bigger if plane is small
+□ Test from the distance people will actually view it
+
+REMEMBER:
+- Big plane = can show big canvas detail clearly
+- Small plane = needs small canvas to avoid pixelation
+- The key is matching them properly
+- Start with plane size, then choose appropriate canvas size
+
+SIMPLE RULE OF THUMB:
+If your drawing looks pixelated, your plane is probably too small for your canvas size. 
+Make the plane bigger, or make the canvas smaller!
+
+IN WONDERLAND EDITOR:
+1. Select your plane object
+2. In the Transform section, try Scale: 2, 2, 1
+3. If still pixelated, try Scale: 4, 4, 1
+4. Keep increasing until it looks good
+5. Or reduce canvas size in the component properties

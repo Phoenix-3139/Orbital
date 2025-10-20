@@ -1,0 +1,110 @@
+===== HOW DRAWING ON A PLANE WORKS =====
+
+Think of it like making a TV screen show a picture you drew:
+
+STEP 1: GET A PIECE OF PAPER (Canvas)
+- Your computer creates an invisible piece of paper called a "canvas"
+- This paper has a width and height (like 512x512 pixels)
+- Each pixel is like a tiny dot you can color
+- IN CODE: this.canvas = document.createElement('canvas');
+
+STEP 2: GET A PAINTBRUSH (Context)
+- The computer gives you a magic paintbrush called "context"
+- This brush can draw circles, rectangles, lines, and text
+- You tell the brush what color to use and where to draw
+- IN CODE: this.brush = this.canvas.getContext('2d');
+
+STEP 3: DRAW YOUR PICTURE
+- You use the brush to draw on the paper
+- "Draw a red circle here"
+- "Draw a blue rectangle there" 
+- "Write some text at the top"
+- The computer remembers everything you drew
+- IN CODE: This happens in the drawContent() function
+
+STEP 4: TAKE A PHOTO OF YOUR DRAWING (Texture)
+- Wonderland Engine takes a "photo" of your drawing
+- This photo is called a "texture"
+- It's like scanning your paper drawing into a computer file
+- IN CODE: this.texture = this.engine.textures.create(this.canvas);
+
+STEP 5: PUT THE PHOTO ON PAINT (Material)
+- In Wonderland Engine, objects have "materials" (like paint)
+- You stick your texture (photo) onto the material
+- It's like putting a sticker on something
+- IN CODE: this.material.flatTexture = this.texture;
+
+STEP 6: PAINT THE 3D OBJECT
+- The material (with your drawing on it) gets painted onto your 3D object
+- If your object is a flat plane, it looks like a TV screen showing your drawing
+- If your object is curved, your drawing wraps around it
+- IN CODE: This happens automatically when you assign the material
+
+THE MAGIC LOOP (Animation):
+- If you want animation, you repeat steps 3-6 over and over
+- Each time you draw something slightly different
+- Like making a flip book - each page is a little different
+- When played fast, it looks like movement
+- IN CODE: The update() function does this every frame
+
+REAL WORLD EXAMPLE:
+Imagine you're making a digital picture frame:
+
+1. You get a blank piece of paper (canvas)
+   CODE: this.canvas = document.createElement('canvas');
+
+2. You get some markers (context/brush)
+   CODE: this.brush = this.canvas.getContext('2d');
+
+3. You draw a smiley face (your drawing code)
+   CODE: this.drawCircle(100, 100, 50, '#ffff00'); // face
+          this.drawCircle(80, 80, 5, '#000000');   // left eye
+          this.drawCircle(120, 80, 5, '#000000');  // right eye
+
+4. You take a photo of your drawing (texture)
+   CODE: this.texture = this.engine.textures.create(this.canvas);
+
+5. You print that photo on special paper (material)
+   CODE: this.material.flatTexture = this.texture;
+
+6. You put that paper in a picture frame (your 3D plane object)
+   CODE: This happens automatically in Wonderland Engine
+
+If you want the smiley face to blink:
+- Every few seconds, you draw a new picture (eyes closed, then open)
+- Take a new photo each time
+- Replace the photo in the frame
+- It looks like the smiley face is blinking!
+- IN CODE: In update(), change eye size based on this.time
+
+CODE BREAKDOWN OF THE TEMPLATE:
+
+setupCanvas() - Creates your paper and gets your brush
+drawContent() - Where YOU draw your picture
+showDrawing() - Takes photo and puts it on the material
+update() - Keeps redrawing for animation
+
+DRAWING FUNCTIONS YOU CAN USE:
+this.drawCircle(x, y, size, color) - Draws a circle
+this.drawRectangle(x, y, width, height, color) - Draws a rectangle
+this.drawLine(x1, y1, x2, y2, color, thickness) - Draws a line
+this.drawText(text, x, y, font, color) - Writes text
+
+WHY THIS IS COOL:
+- You can draw ANYTHING: graphs, games, animations, art
+- It updates in real-time in your 3D world
+- Other people in VR/AR can see your drawings
+- You can make interactive displays, control panels, or art
+- All with simple drawing commands!
+
+SIMPLE SUMMARY:
+Draw on invisible paper → Take photo → Stick photo on 3D object → Magic!
+
+The computer handles all the hard work. You just tell it what to draw and where using the drawing functions in drawContent().
+
+WHAT YOU NEED TO CHANGE:
+1. Find the drawContent() function in PlaneDrawingTemplate.js
+2. Look for "=== YOUR DRAWING GOES HERE ==="
+3. Replace that section with your own drawing commands
+4. Use this.drawCircle(), this.drawRectangle(), etc.
+5. Save and test in Wonderland Engine!

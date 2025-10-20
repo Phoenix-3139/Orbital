@@ -12,15 +12,14 @@ export class UniversalCoordinateSystem {
         this.cameraMode = 'SOLAR_SYSTEM';
         this.targetPlanet = null;
         
-        // Fixed scale levels for each mode (updated)
+        // Fixed scale levels for each mode
         this.scales = {
             SOLAR_SYSTEM: 1.1e10,    // 11 million km per pixel
             INNER_PLANETS: 1e9,      // 1 million km per pixel  
-            PLANET: 5e5,             // 10,000 km per pixel
-            ATMOSPHERE: 1e4          // 10 km per pixel (for atmospheric layers)
+            PLANET: 5e5              // 10,000 km per pixel
         };
         
-        // Planet size multipliers for visibility (updated)
+        // Planet size multipliers for visibility
         this.planetSizeMultipliers = {
             SOLAR_SYSTEM: {
                 sunMultiplier: 0.1,
@@ -36,11 +35,6 @@ export class UniversalCoordinateSystem {
                 sunMultiplier: 0.05,
                 planetMultiplier: 1.0,
                 minPixelSize: 2.0
-            },
-            ATMOSPHERE: {
-                sunMultiplier: 0.01,
-                planetMultiplier: 10.0,
-                minPixelSize: 50.0
             }
         };
         
@@ -61,7 +55,7 @@ export class UniversalCoordinateSystem {
      /**
      * Convert a 1D world length (meters) to screen length (pixels) for a given mode.
      */
-    worldtoScreen1D(length,mode)
+    worldtoScreen1D(length, mode)
     {
         const scaledLength = length*this.scales[mode];
         return scaledLength;
@@ -70,7 +64,7 @@ export class UniversalCoordinateSystem {
      /**
      * Convert a 1D screen length (pixels) to world length (meters) for a given mode.
      */
-    screentoWorld1D(length,mode)
+    screentoWorld1D(length, mode)
     {
         const scaledLength = length/this.scales[mode];
         return scaledLength;
@@ -118,21 +112,20 @@ export class UniversalCoordinateSystem {
     }
 
     /**
-     * Set camera mode using number (updated for mode 4)
+     * Set camera mode using number
      */
     setCameraModeByNumber(modeNumber, targetPlanet = null) {
         const modes = {
             1: 'SOLAR_SYSTEM',
             2: 'INNER_PLANETS',
-            3: 'PLANET',
-            4: 'ATMOSPHERE'
+            3: 'PLANET'
         };
         
         const mode = modes[modeNumber];
         if (mode) {
             this.setCameraMode(mode, targetPlanet);
         } else {
-            console.warn(`Invalid camera mode number: ${modeNumber}. Use 1 for Solar System, 2 for Inner Planets, 3 for Planet, 4 for Atmosphere.`);
+            console.warn(`Invalid camera mode number: ${modeNumber}. Use 1 for Solar System, 2 for Inner Planets, 3 for Planet.`);
         }
     }
 
@@ -186,10 +179,10 @@ export class UniversalCoordinateSystem {
     }
 
     /**
-     * Update camera position (updated for mode 4)
+     * Update camera position
      */
     updateCamera() {
-        if ((this.cameraMode === 'PLANET' || this.cameraMode === 'ATMOSPHERE') && 
+        if (this.cameraMode === 'PLANET' && 
             this.targetPlanet && this.targetPlanet.position) {
             if (this.smoothTransitions) {
                 const dx = this.targetPlanet.position.x - this.cameraCenter.x;
@@ -264,13 +257,12 @@ export class UniversalCoordinateSystem {
     }
 
     /**
-     * Get visible planets for current mode (updated)
+     * Get visible planets for current mode
      */
     getVisiblePlanets(allBodies) {
         switch (this.cameraMode) {
             case 'SOLAR_SYSTEM':
             case 'PLANET':
-            case 'ATMOSPHERE':
                 return allBodies;
             case 'INNER_PLANETS':
                 const innerPlanets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars'];

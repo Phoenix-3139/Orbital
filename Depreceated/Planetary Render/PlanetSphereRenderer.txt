@@ -1,4 +1,4 @@
-import { ColorUtils } from '../ColorUtils.js';
+import { ColorUtils } from '../../src/SolarSim/Display/Rendering/ColorUtils.js';
 
 /**
  * Planet Sphere Renderer
