@@ -39,7 +39,16 @@ export class SimulationController {
             if (body.orbit && body.orbit.centralBody && body.orbit.centralBody !== 'sun') {
                 const centralKey = body.orbit.centralBody;
                 const centralData = Body.planetData[centralKey];
-                const parent = centralData ? this.bodies.find(b => b.name === centralData.name) : null;
+                // replaced find() + arrow function with simple loop for readability
+                let parent = null;
+                if (centralData && centralData.name) {
+                    for (let i = 0; i < this.bodies.length; i++) {
+                        if (this.bodies[i].name === centralData.name) {
+                            parent = this.bodies[i];
+                            break;
+                        }
+                    }
+                }
 
                 // Update relative position then convert to absolute if parent exists
                 body.updatePosition(this.simulationTime);

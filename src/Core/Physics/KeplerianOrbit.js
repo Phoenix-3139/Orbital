@@ -1,18 +1,17 @@
 /**
- * ORBITAL MECHANICS - SIMPLIFIED
- * 
+ * ORBITAL MECHANICS
  * This file calculates where planets are at any given time.
  * It uses Kepler's laws (elliptical orbits).
  */
 
 import { Body } from '../Data/body.js';
 
-// ============================================
-// PART 1: THE ORBIT CLASS
+
+// MARK: 1: THE ORBIT CLASS
 // Stores the shape and timing of an orbit
-// ============================================
+
 export class Orbit {
-    constructor(orbitData, gravitationalParameter = Body.GM_SUN) {
+    constructor(orbitData, gravitationalParameter = Body.GM_SUN, use3D = false) {
         // Orbit shape (how stretched/tilted the ellipse is)
         this.semiMajorAxis = orbitData.semiMajorAxis;  // Size of orbit
         this.eccentricity = orbitData.eccentricity;    // How elliptical (0=circle, 0.9=very stretched)
@@ -34,6 +33,9 @@ export class Orbit {
         
         // Remember what this orbits around
         this.centralBody = orbitData.centralBody;
+        
+        // NEW: 3D mode flag
+        this.use3D = use3D;
     }
 
     // Calculate position at a specific time
@@ -53,24 +55,65 @@ export class Orbit {
         // Step 5: Calculate distance from center
         const distance = this.semiMajorAxis * (1 - this.eccentricity * Math.cos(eccentricAnomaly));
         
-        // Step 6: Calculate x, y position
-        const angle = trueAnomaly + this.argumentOfPeriapsis;
-        const x = distance * Math.cos(angle);
-        const y = distance * Math.sin(angle);
-        
-        return { x, y, distance, trueAnomaly };
+        // Step 6: Calculate position (2D or 3D based on mode)
+        if (this.use3D) {
+            return this.compute3DPosition(trueAnomaly, distance, eccentricAnomaly, meanAnomaly);
+        } else {
+            // Original 2D calculation
+            const angle = trueAnomaly + this.argumentOfPeriapsis;
+            const x = distance * Math.cos(angle);
+            const y = distance * Math.sin(angle);
+            return { x, y, distance, trueAnomaly };
+        }
     }
 
-    // Solve Kepler's equation using iteration
-    // (This is the tricky math part - converts time to position)
-    solveKeplersEquation(meanAnomaly) {
-        let eccentricAnomaly = meanAnomaly;  // Initial guess
+    // NEW: Compute full 3D position with inclination and node rotation
+    compute3DPosition(trueAnomaly, distance, eccentricAnomaly, meanAnomaly) {
+        // Argument of latitude (angle from ascending node)
+        const u = this.argumentOfPeriapsis + trueAnomaly;
         
-        // Iterate 10 times to get close enough
-        for (let i = 0; i < 10; i++) {
-            const error = eccentricAnomaly - this.eccentricity * Math.sin(eccentricAnomaly) - meanAnomaly;
+        // Precompute trig functions
+        const cosU = Math.cos(u);
+        const sinU = Math.sin(u);
+        const cosOmega = Math.cos(this.longitudeOfAscendingNode);
+        const sinOmega = Math.sin(this.longitudeOfAscendingNode);
+        const cosI = Math.cos(this.inclination);
+        const sinI = Math.sin(this.inclination);
+        
+        // Transform from orbital plane to inertial frame (3D rotation)
+        const x = distance * (cosOmega * cosU - sinOmega * sinU * cosI);
+        const y = distance * (sinOmega * cosU + cosOmega * sinU * cosI);
+        const z = distance * (sinU * sinI);
+        
+        return {
+            x, y, z,
+            distance,
+            trueAnomaly,
+            eccentricAnomaly,
+            meanAnomaly
+        };
+    }
+
+    // Solve Kepler's equation using iteration (IMPROVED)
+    solveKeplersEquation(meanAnomaly) {
+        // Normalize mean anomaly to [-π, π] for better convergence
+        let M = ((meanAnomaly + Math.PI) % (2 * Math.PI)) - Math.PI;
+        
+        // Better initial guess based on eccentricity
+        let eccentricAnomaly = (this.eccentricity < 0.8) ? M : Math.PI;
+        
+        const maxIterations = 50;
+        const tolerance = 1e-12;
+        
+        // Newton-Raphson iteration with convergence check
+        for (let i = 0; i < maxIterations; i++) {
+            const error = eccentricAnomaly - this.eccentricity * Math.sin(eccentricAnomaly) - M;
             const derivative = 1 - this.eccentricity * Math.cos(eccentricAnomaly);
-            eccentricAnomaly = eccentricAnomaly - error / derivative;
+            const delta = error / derivative;
+            eccentricAnomaly -= delta;
+            
+            // Stop when we're close enough
+            if (Math.abs(delta) < tolerance) break;
         }
         
         return eccentricAnomaly;
@@ -80,7 +123,7 @@ export class Orbit {
     eccentricToTrue(eccentricAnomaly) {
         const cosE = Math.cos(eccentricAnomaly);
         const sinE = Math.sin(eccentricAnomaly);
-        const sqrtTerm = Math.sqrt(1 - this.eccentricity * this.eccentricity);
+        const sqrtTerm = Math.sqrt(Math.max(0, 1 - this.eccentricity * this.eccentricity));
         return Math.atan2(sqrtTerm * sinE, cosE - this.eccentricity);
     }
 
@@ -90,20 +133,21 @@ export class Orbit {
     }
 }
 
-// ============================================
-// PART 2: THE CELESTIAL BODY CLASS
+// MARK: 2: THE CELESTIAL BODY CLASS
 // A planet/moon with position, velocity, trail
-// ============================================
+
 export class CelestialBody {
-    constructor(name, mass, radius, color, orbit) {
+    constructor(name, mass, radius, color, orbit, spritePath = null, use3D = false) {
         this.name = name;
         this.mass = mass;
         this.radius = radius;
         this.color = color;
         this.orbit = orbit;  // Can be null for Sun
-        
-        this.position = { x: 0, y: 0 };
-        this.velocity = { x: 0, y: 0 };
+        this.spritePath = spritePath;
+        this.use3D = use3D;
+
+        this.position = use3D ? { x: 0, y: 0, z: 0 } : { x: 0, y: 0 };
+        this.velocity = use3D ? { x: 0, y: 0, z: 0 } : { x: 0, y: 0 };
         this.trail = [];
     }
 
@@ -116,11 +160,18 @@ export class CelestialBody {
         const state = this.orbit.getPositionAtTime(currentTime);
         this.position.x = state.x;
         this.position.y = state.y;
+        if (this.use3D && state.z !== undefined) {
+            this.position.z = state.z;
+        }
     }
 
     // Add current position to trail
     addToTrail(maxTrailLength = 2000) {
-        this.trail.push({ x: this.position.x, y: this.position.y });
+        if (this.use3D) {
+            this.trail.push({ x: this.position.x, y: this.position.y, z: this.position.z });
+        } else {
+            this.trail.push({ x: this.position.x, y: this.position.y });
+        }
         
         // Keep trail from getting too long
         if (this.trail.length > maxTrailLength) {
@@ -134,12 +185,12 @@ export class CelestialBody {
     }
 }
 
-// ============================================
-// PART 3: SOLAR SYSTEM FACTORY
+
+// //MARK: MARK: 3: SOLAR SYSTEM FACTORY
 // Creates all planets from the data
-// ============================================
+
 export class SolarSystem {
-    static createAllBodies() {
+    static createAllBodies(use3D = false) {
         const bodies = [];
 
         // Loop through all planets in our data
@@ -152,9 +203,11 @@ export class SolarSystem {
                     planetData.mass,
                     planetData.radius,
                     planetData.color,
-                    null  // No orbit
+                    null,                     // No orbit
+                    planetData.spritePath,
+                    use3D
                 );
-                sun.position = { x: 0, y: 0 };  // Sun at center
+                sun.position = use3D ? { x: 0, y: 0, z: 0 } : { x: 0, y: 0 };
                 bodies.push(sun);
                 continue;
             }
@@ -162,8 +215,8 @@ export class SolarSystem {
             // Get the right gravity constant
             const GM = Body.getGravitationalParameter(key);
 
-            // Create the orbit
-            const orbit = new Orbit(planetData.orbit, GM);
+            // Create the orbit with 3D flag
+            const orbit = new Orbit(planetData.orbit, GM, use3D);
 
             // Create the body
             const body = new CelestialBody(
@@ -171,7 +224,9 @@ export class SolarSystem {
                 planetData.mass,
                 planetData.radius,
                 planetData.color,
-                orbit
+                orbit,
+                planetData.spritePath,
+                use3D
             );
 
             bodies.push(body);
@@ -180,3 +235,5 @@ export class SolarSystem {
         return bodies;
     }
 }
+
+

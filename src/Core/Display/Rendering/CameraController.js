@@ -21,9 +21,16 @@ export class CameraController {
         
         // If in planet mode (3) and target planet is specified
         if (cameraMode === 3 && targetPlanet) {
-            targetPlanetObj = bodies.find(body => 
-                body.name.toLowerCase() === targetPlanet.toLowerCase()
-            );
+            // replaced find() + arrow function with simple loop for readability
+            const tpLower = String(targetPlanet).toLowerCase();
+            for (let i = 0; i < bodies.length; i++) {
+                const b = bodies[i];
+                if (!b || !b.name) { continue; }
+                if (b.name.toLowerCase() === tpLower) {
+                    targetPlanetObj = b;
+                    break;
+                }
+            }
             
             if (!targetPlanetObj) {
                 console.warn(`Target planet "${targetPlanet}" not found in bodies list.`);
@@ -96,7 +103,7 @@ export class CameraController {
     }
 
     /**
-     * Update Camera System (from original _updateCamera method)
+     * Update Camera System
      */
     updateCamera(cameraMode, targetPlanet, bodies, planetScaleBoost, overridePlanetScaling, manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels, manualZoom) {
         // Check if camera mode changed in editor during runtime
@@ -104,9 +111,16 @@ export class CameraController {
             let targetPlanetObj = null;
             
             if (cameraMode === 3 && targetPlanet) {
-                targetPlanetObj = bodies.find(body => 
-                    body.name.toLowerCase() === targetPlanet.toLowerCase()
-                );
+                // replaced find() + arrow function with simple loop
+                const tpLower = String(targetPlanet).toLowerCase();
+                for (let i = 0; i < bodies.length; i++) {
+                    const b = bodies[i];
+                    if (!b || !b.name) { continue; }
+                    if (b.name.toLowerCase() === tpLower) {
+                        targetPlanetObj = b;
+                        break;
+                    }
+                }
             }
             
             this.coordSystem.setCameraModeByNumber(cameraMode, targetPlanetObj);
@@ -121,11 +135,6 @@ export class CameraController {
         if (cameraMode === 3) {
             this._applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels);
         }
-
-        if(cameraMode == 4)
-        {
-            this._applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels);
-        }
         
         if (overridePlanetScaling) {
             this._applyManualScaling(manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels);
@@ -133,9 +142,17 @@ export class CameraController {
 
         // Update camera position if following a planet in planet mode
         if (cameraMode === 3 && targetPlanet) {
-            const target = bodies.find(body => 
-                body.name.toLowerCase() === targetPlanet.toLowerCase()
-            );
+            
+            let target = null;
+            const tpLower = String(targetPlanet).toLowerCase();
+            for (let i = 0; i < bodies.length; i++) {
+                const b = bodies[i];
+                if (!b || !b.name) { continue; }
+                if (b.name.toLowerCase() === tpLower) {
+                    target = b;
+                    break;
+                }
+            }
             
             if (target) {
                 this.coordSystem.targetPlanet = target;
@@ -165,7 +182,17 @@ export class CameraController {
      * Adaptive planet focus for mode 3.
      */
     _configurePlanetFocusView(targetPlanetName, bodies, planetScaleBoost, manualZoom) {
-        const planet = bodies.find(body => body.name.toLowerCase() === targetPlanetName.toLowerCase());
+        
+        let planet = null;
+        const tpLower = String(targetPlanetName).toLowerCase();
+        for (let i = 0; i < bodies.length; i++) {
+            const b = bodies[i];
+            if (!b || !b.name) { continue; }
+            if (b.name.toLowerCase() === tpLower) {
+                planet = b;
+                break;
+            }
+        }
         if (!planet) {
             console.warn(`Planet ${targetPlanetName} not found for focus mode`);
             return;

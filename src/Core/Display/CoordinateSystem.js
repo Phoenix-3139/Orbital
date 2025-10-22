@@ -149,35 +149,52 @@ export class UniversalCoordinateSystem {
 
     /**
      * Set camera mode directly
+     * mode: 'SOLAR_SYSTEM' | 'INNER_PLANETS' | 'PLANET'
+     * targetPlanet: optional object with .position {x,y} (can be null)
      */
     setCameraMode(mode, targetPlanet = null) {
+        // validate mode
+        if (!this.scales.hasOwnProperty(mode)) {
+            console.warn(`setCameraMode: unknown mode "${mode}", defaulting to SOLAR_SYSTEM`);
+            mode = 'SOLAR_SYSTEM';
+        }
+
         this.cameraMode = mode;
         this.targetPlanet = targetPlanet;
+
+        // update scale for this mode
         this.metersPerPixel = this.scales[mode];
-        
+
+        // choose camera center based on mode
         switch (mode) {
             case 'SOLAR_SYSTEM':
             case 'INNER_PLANETS':
+                // center on system origin (Sun / barycenter)
                 this.cameraCenter.x = 0;
                 this.cameraCenter.y = 0;
                 break;
-                
+
             case 'PLANET':
-            case 'ATMOSPHERE':
+                // prefer explicit planet position when provided
                 if (targetPlanet && targetPlanet.position) {
                     this.cameraCenter.x = targetPlanet.position.x;
                     this.cameraCenter.y = targetPlanet.position.y;
                 } else {
-                    this.cameraCenter.x = 1.496e11; // 1 AU
+                    // fallback to 1 AU on x-axis so view is not undefined
+                    this.cameraCenter.x = 1.496e11;
                     this.cameraCenter.y = 0;
                 }
                 break;
         }
-        
+
+        // Immediately apply camera update if smoothing disabled
+        if (!this.smoothTransitions) {
+            this.updateCamera();
+        }
+
         console.log(`Camera mode set to: ${mode}`);
         console.log(`Scale: ${this.getScaleDescription()}`);
     }
-
     /**
      * Update camera position
      */
@@ -211,8 +228,7 @@ export class UniversalCoordinateSystem {
         const limits = {
             SOLAR_SYSTEM: { min: 1e9, max: 1e11 },
             INNER_PLANETS: { min: 5e8, max: 5e9 },
-            PLANET: { min: 1e5, max: 1e8 },
-            ATMOSPHERE: { min: 1e3, max: 1e6 }
+            PLANET: { min: 1e5, max: 1e8 }
         };
         
         const limit = limits[this.cameraMode];
@@ -266,7 +282,19 @@ export class UniversalCoordinateSystem {
                 return allBodies;
             case 'INNER_PLANETS':
                 const innerPlanets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars'];
-                return allBodies.filter(body => innerPlanets.includes(body.name));
+                
+                const result = [];
+                for (let i = 0; i < allBodies.length; i++) {
+                    const b = allBodies[i];
+                    if (!b || !b.name) { continue; }
+                    for (let j = 0; j < innerPlanets.length; j++) {
+                        if (innerPlanets[j] === b.name) {
+                            result.push(b);
+                            break;
+                        }
+                    }
+                }
+                return result;
             default:
                 return allBodies;
         }

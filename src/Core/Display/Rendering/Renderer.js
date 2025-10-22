@@ -10,20 +10,20 @@ export class Renderer {
         this.canvas = canvasManager.canvas;
         this.ctx = canvasManager.ctx;
         this.coordSystem = coordSystem;
+        this.spriteCache = {};
+        
+        // Disable image smoothing for crisp sprites
+        this.ctx.imageSmoothingEnabled = false;
     }
 
-    // ========================================
-    // MAIN RENDERING
-    // ========================================
+    // MARK: CLEAR SCREEN
 
     clear(bgColor) {
         this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    // ========================================
-    // PLANET RENDERING
-    // ========================================
+    //MARK: PLANET RENDERING
 
     drawPlanet(body, cameraMode, useRealScale, minSize, scaleBoost) {
         if (body.isBarycenter && cameraMode !== 3) {
@@ -38,10 +38,19 @@ export class Renderer {
         }
 
         const radius = this.calculateRadius(body, cameraMode, useRealScale, minSize, scaleBoost);
-        this.drawPlanetCircle(body, screenPos, radius);
-        
-        if (radius >= 2) {
-            this.drawPlanetLabel(body.name, screenPos.x, screenPos.y - radius - 8, radius, cameraMode);
+
+        if (body.spritePath) {
+            if (!(body.name === "Moon" && (cameraMode === 1||cameraMode === 2))) {
+                this.drawPlanetSprite(body, screenPos, radius);
+            }
+        } else {
+            this.drawPlanetCircle(body, screenPos, radius);
+        }
+
+        if (radius >= 2 && !(body.name === "Earth-Moon Barycenter")) {
+            if (!(body.name === "Moon" && (cameraMode === 1||cameraMode === 2))) {
+                this.drawPlanetLabel(body.name, screenPos.x, screenPos.y - radius - 8, radius, cameraMode);
+            }
         }
     }
 
@@ -51,6 +60,7 @@ export class Renderer {
         this.ctx.fillStyle = body.color;
         this.ctx.fill();
 
+
         if (radius >= 2) {
             this.ctx.strokeStyle = ColorUtils.adjustColorBrightness(body.color, 0.3);
             this.ctx.lineWidth = Math.max(0.5, radius * 0.05);
@@ -58,16 +68,35 @@ export class Renderer {
         }
     }
 
+    drawPlanetSprite(body, screenPos, radius) 
+    {
+        const key = body.spritePath;
+        
+        if (this.spriteCache[key]) {
+            this.ctx.drawImage(this.spriteCache[key], screenPos.x - radius, screenPos.y - radius, radius * 2, radius * 2);
+
+            /*if (radius >= 2) {
+                this.ctx.strokeStyle = ColorUtils.adjustColorBrightness(body.color, 0.3);
+                this.ctx.lineWidth = Math.max(0.5, radius * 0.05);
+                this.ctx.beginPath();
+                this.ctx.arc(screenPos.x, screenPos.y, radius, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }*/
+            return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+            this.spriteCache[key] = img;
+        };
+        img.src = key;
+    }
+
     drawBarycenterMarker(screenPos) {
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
         this.ctx.beginPath();
         this.ctx.arc(screenPos.x, screenPos.y, 2, 0, Math.PI * 2);
         this.ctx.fill();
-
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        this.ctx.font = '10px Arial';
-        this.ctx.textAlign = 'left';
-        this.ctx.fillText('Barycenter', screenPos.x + 5, screenPos.y - 5);
     }
 
     calculateRadius(body, cameraMode, useRealScale, minSize, scaleBoost) {
@@ -107,16 +136,20 @@ export class Renderer {
         this.ctx.fillText(text, x, y);
     }
 
-    // ========================================
-    // TRAIL RENDERING
-    // ========================================
+    //MARK: TRAIL RENDERING
 
     drawTrail(body) {
         if (!body.trail || body.trail.length < 2) {
             return;
         }
 
-        const points = body.trail.map(p => this.coordSystem.worldToScreen(p.x, p.y));
+
+        const points = [];
+        for (let i = 0; i < body.trail.length; i++) {
+            const p = body.trail[i];
+            points.push(this.coordSystem.worldToScreen(p.x, p.y));
+        }
+
         const color = body.isBarycenter ? '#0000FF' : body.color;
         const trailColor = ColorUtils.colorToRgba(color, 0.4);
 
@@ -132,9 +165,7 @@ export class Renderer {
         this.ctx.stroke();
     }
 
-    // ========================================
-    // GRID RENDERING
-    // ========================================
+    //MARK: GRID RENDERING
 
     drawGrid() {
         const gridSpacing = 100;
@@ -169,9 +200,8 @@ export class Renderer {
         }
     }
 
-    // ========================================
-    // UI RENDERING
-    // ========================================
+    
+    // //MARK: UI RENDERING
 
     drawUI(cameraMode, timeMultiplier, simulationTime, targetPlanet, useRealScale, planetScaleBoost) {
         this.ctx.fillStyle = 'white';
@@ -235,31 +265,10 @@ export class Renderer {
     }
 
     drawControlHints() {
-        const x = 10;
-        let y = this.canvas.height - 80;
-
-        this.ctx.fillStyle = 'rgba(200, 200, 255, 0.8)';
-        this.ctx.font = '12px Arial';
-        this.ctx.fillText('Editor Properties:', x, y);
-        y += 15;
-
-        this.ctx.fillStyle = 'rgba(180, 180, 180, 0.7)';
-        this.ctx.font = '10px Arial';
-
-        const hints = [
-            '• planetScaleBoost: Planet size multiplier for Mode 3',
-            '• cameraMode: 1=Solar, 2=Inner, 3=Planet'
-        ];
-
-        for (let i = 0; i < hints.length; i++) {
-            this.ctx.fillText(hints[i], x, y);
-            y += 13;
-        }
+        // Bottom-right corner deprececated
     }
 
-    // ========================================
-    // UTILITY
-    // ========================================
+    // MARK: Utility to format distances
 
     formatDistance(distance) {
         if (distance > 1e11) {

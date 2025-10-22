@@ -10,10 +10,6 @@ export class Body {
     static GM_SUN = 1.32712440018e20; // m^3/s^2
     static GM_EARTH_MOON = 4.03503235502e14; // Combined Earth+Moon GM in m³/s²
 
-    // Backwards-compatible aliases
-    static AU_TO_METERS = Body.AU;
-    static GRAVITATIONAL_CONSTANT = Body.G;
-
     // Planetary Database with atmospheric entries removed for simplicity
     static planetData = {
         sun: {
@@ -22,25 +18,26 @@ export class Body {
             radius: 695700,
             color: 'yellow',
             SOI: 1e13,
-            priority: 3
+            priority: 3,
+            spritePath: 'Sun.png',
         },
 
         mercury: {
             name: 'Mercury',
-            mass: 3.302e23,
-            radius: 2439.4,
-            color: 'gray',
-            SOI: 1.1e7,
-            priority: 1,
+            mass: 3.302e23, // in kg
+            radius: 2439.4, // in km
+            color: 'gray', 
+            SOI: 1.1e7, // in meters
+            priority: 1, // High priority for rendering
+            spritePath: 'Mercury.png', // Path to sprite image
             orbit: {
-                semiMajorAxis: 0.387 * Body.AU,
-                eccentricity: 0.206,
-                inclination: 7.005 * (Math.PI / 180),
-                longitudeOfAscendingNode: 48.331 * (Math.PI / 180),
-                argumentOfPeriapsis: 29.124 * (Math.PI / 180),
-                meanAnomalyAtEpoch: 174.796 * (Math.PI / 180),
-                epochTime: 0,
-                centralBody: 'sun'
+                semiMajorAxis: 0.387 * Body.AU, // in meters
+                eccentricity: 0.206, // unitless
+                inclination: 7.005 * (Math.PI / 180), // in radians
+                longitudeOfAscendingNode: 48.331 * (Math.PI / 180), // in radians
+                argumentOfPeriapsis: 29.124 * (Math.PI / 180), // in radians
+                meanAnomalyAtEpoch: 174.796 * (Math.PI / 180), // in radians
+                centralBody: 'sun' // central body name
             }
         },
 
@@ -51,6 +48,7 @@ export class Body {
             color: 'orange',
             SOI: 6.2e7,
             priority: 1,
+            spritePath: 'Venus.png',
             orbit: {
                 semiMajorAxis: 0.723 * Body.AU,
                 eccentricity: 0.007,
@@ -70,6 +68,7 @@ export class Body {
             color: 'transparent',
             SOI: 9.25e8,
             priority: 2,
+            spritePath: 'Earth.png',
             orbit: {
                 semiMajorAxis: 1.000 * Body.AU,
                 eccentricity: 0.017,
@@ -77,7 +76,7 @@ export class Body {
                 longitudeOfAscendingNode: -11.26064 * (Math.PI / 180),
                 argumentOfPeriapsis: 114.20783 * (Math.PI / 180),
                 meanAnomalyAtEpoch: 357.51716 * (Math.PI / 180),
-                epochTime: 0,
+                epochTime: 0, // This means that at time 0, the position corresponds to the above elements
                 centralBody: 'sun'
             },
             isBarycenter: true
@@ -90,6 +89,7 @@ export class Body {
             color: 'blue',
             SOI: 9.25e8,
             priority: 1,
+            spritePath: 'Earth.png',
             orbit: {
                 semiMajorAxis: 4671e3,
                 eccentricity: 0.0549,
@@ -111,6 +111,8 @@ export class Body {
             color: 'gray',
             SOI: 6.61e7,
             priority: 1,
+            satellite: 'true',
+            spritePath: 'Moon.png',
             orbit: {
                 semiMajorAxis: 384400e3,
                 eccentricity: 0.05490,
@@ -132,6 +134,7 @@ export class Body {
             color: 'red',
             SOI: 5.77e8,
             priority: 1,
+            spritePath: 'Mars.png',
             orbit: {
                 semiMajorAxis: 1.524 * Body.AU,
                 eccentricity: 0.093,
@@ -151,6 +154,7 @@ export class Body {
             color: '#DAA520',
             SOI: 4.82e9,
             priority: 1,
+            spritePath: 'Jupiter.png',
             orbit: {
                 semiMajorAxis: 5.203 * Body.AU,
                 eccentricity: 0.048,
@@ -170,6 +174,7 @@ export class Body {
             color: '#FAD5A5',
             SOI: 8.5e8,
             priority: 1,
+            spritePath: 'Saturn.png',
             orbit: {
                 semiMajorAxis: 9.537 * Body.AU,
                 eccentricity: 0.054,
@@ -189,6 +194,7 @@ export class Body {
             color: '#4FD0E3',
             SOI: 3.9e8,
             priority: 1,
+            spritePath: 'Uranus.png',
             orbit: {
                 semiMajorAxis: 19.19 * Body.AU,
                 eccentricity: 0.047,
@@ -208,6 +214,7 @@ export class Body {
             color: '#4169E1',
             SOI: 2.27e8,
             priority: 1,
+            spritePath: 'Neptune.png',
             orbit: {
                 semiMajorAxis: 30.07 * Body.AU,
                 eccentricity: 0.009,
@@ -221,25 +228,9 @@ export class Body {
         }
     };
 
-    // System configuration for modular body relationships
-    static systemHierarchy = {
-        sun: [],
-        earthMoonBarycenter: ['earth', 'moon']
-    };
-
-    static getBodiesOrbitingBody(centralBodyKey) {
-        return Object.entries(Body.planetData)
-            .filter(([key, data]) => data.orbit && data.orbit.centralBody === centralBodyKey)
-            .map(([key, data]) => ({ key, data }));
-    }
-
     static isBarycenter(bodyKey) {
         return Body.planetData[bodyKey]?.isBarycenter === true;
-    }
-
-    static getSystemChildren(parentKey) {
-        return Body.systemHierarchy[parentKey] || [];
-    }
+    } 
 
     static getGravitationalParameter(bodyKey) {
         const bodyData = Body.planetData[bodyKey];
@@ -257,81 +248,16 @@ export class Body {
         return Body.GM_SUN;
     }
 
-    constructor(planetKey = null) {
-        this.name = '';
-        this.mass = 0;
-        this.radius = 0;
-        this.color = '#FFFFFF';
-        this.position = { x: 0, y: 0 };
-        this.velocity = { x: 0, y: 0 };
-
-        if (planetKey) {
-            this.initializeFromPlanet(planetKey);
-        }
-    }
-
-    initializeFromPlanet(planetKey) {
-        const data = Body.planetData[planetKey];
-        if (!data) {
-            console.error(`Planet data not found for key: ${planetKey}`);
-            return;
-        }
-
-        this.name = data.name;
-        this.mass = data.mass;
-        this.radius = data.radius;
-        this.color = data.color;
-    }
-
-    static calculateCircularOrbitVelocity(position, centralMass) {
-        const distance = Math.sqrt(position.x * position.x + position.y * position.y);
-        const speed = Math.sqrt(Body.GRAVITATIONAL_CONSTANT * centralMass / distance);
-
-        const unitX = -position.y / distance;
-        const unitY = position.x / distance;
-
-        return { x: speed * unitX, y: speed * unitY };
-    }
-
-    getMass() { return this.mass; }
-    getPosition() { return { ...this.position }; }
-    getVelocity() { return { ...this.velocity }; }
-    setPosition(x, y) { this.position = { x, y }; }
-    setVelocity(vx, vy) { this.velocity = { x: vx, y: vy }; }
-    setMass(mass) { this.mass = mass; }
-    setName(name) { this.name = name; }
-    setColor(color) { this.color = color; }
-    setRadius(radius) { this.radius = radius; }
-
     getDisplayRadius() {
         return Math.max(2, Math.log10(this.mass / 1e20) * 2);
     }
 
-    getRadiusInMeters() {
+    getWorldRadius() {
         return this.radius * 1000;
     }
-
-    getWorldRadius() {
-        return this.getRadiusInMeters();
-    }
-
-    getSurfaceGravity() {
-        if (this.mass === 0 || this.radius === 0) return 0;
-        const radiusMeters = this.radius * 1000;
-        return (Body.GRAVITATIONAL_CONSTANT * this.mass) / (radiusMeters * radiusMeters);
-    }
-
-    static densityToAlpha(density) {
-        const maxDensity = 1.225;
-        let alpha = density / maxDensity;
-        if (alpha < 0) alpha = 0;
-        if (alpha > 1) alpha = 1;
-        return alpha;
-    }
+    
 }
 
-// Backward compatibility
-export const BodyData = Body.planetData;
 
 
 
