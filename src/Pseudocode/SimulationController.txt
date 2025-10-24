@@ -1,0 +1,152 @@
+// Simulation Controller
+// - Creates bodies from SolarSystem factory
+// - Keeps simulation time
+// - Updates positions and trails each tick
+
+Import SolarSystem from '../../Physics/KeplerianOrbit.js'
+Import Body from '../../Data/body.js'
+
+Define class SimulationController
+    constructor(timeMultiplier = 2000000, maxTrailPoints = 2000)
+        Assign timeMultiplier to this.timeMultiplier
+        Assign 0 to this.simulationTime              // seconds
+        Assign empty array to this.bodies
+        Assign maxTrailPoints to this.maxTrailPoints
+
+    // Create bodies and set initial positions
+    initState()
+        Assign SolarSystem.createAllBodies() to this.bodies
+        
+        // Ensure each body has a trail array
+        For each body in this.bodies
+            If NOT body.trail exists
+                Assign empty array to body.trail
+        
+        // Set positions at t=0
+        Call this.updateKeplerianOrbits()
+
+    // Update orbital positions and trails
+    updateKeplerianOrbits()
+        // Step 1: Update primary bodies (no orbit or orbit around Sun)
+        For each body in this.bodies
+            If NOT body.orbit exists OR NOT body.orbit.centralBody exists OR body.orbit.centralBody equals 'sun'
+                Call body.updatePosition(this.simulationTime)
+        
+        // Step 2: Update secondary bodies (orbit around another body)
+        For each body in this.bodies
+            If body.orbit exists AND body.orbit.centralBody exists AND body.orbit.centralBody is not equal to 'sun'
+                Assign body.orbit.centralBody to centralKey
+                Assign Body.planetData[centralKey] to centralData
+                
+                // Find parent body
+                Assign null to parent
+                If centralData exists AND centralData.name exists
+                    For i from 0 to this.bodies.length - 1
+                        If this.bodies[i].name equals centralData.name
+                            Assign this.bodies[i] to parent
+                            Break loop
+                
+                // Update relative position
+                Call body.updatePosition(this.simulationTime)
+                
+                // Convert to absolute position if parent exists
+                If parent exists
+                    Add parent.position.x to body.position.x
+                    Add parent.position.y to body.position.y
+        
+        // Step 3: Add current position to each body's trail (bounded)
+        For each body in this.bodies
+            // Ensure trail exists
+            If body.trail is not an array
+                Assign empty array to body.trail
+            
+            // Calculate dynamic trail length: one full orbit + buffer
+            Assign this.maxTrailPoints to maxPoints
+            
+            // Special case: Earth-Moon system
+            If body.name equals 'Earth' AND body.orbit exists
+                Assign body.getOrbitalPeriod() to period
+                If period exists AND period is greater than 0
+                    Assign this.timeMultiplier multiplied by 0.016 to dt
+                    Assign Math.ceil((period divided by dt) multiplied by 20000) to maxPoints
+            
+            Otherwise if body.orbit exists
+                // Normal planets
+                Assign body.getOrbitalPeriod() to period
+                If period exists AND period is greater than 0
+                    Assign this.timeMultiplier multiplied by 0.016 to dt
+                    Assign Math.ceil((period divided by dt) multiplied by 2) to maxPoints
+            
+            // Add to trail using body's method or fallback
+            If body.addToTrail is a function
+                Call body.addToTrail(maxPoints)
+            Otherwise
+                Push {x: body.position.x, y: body.position.y} to body.trail
+                If body.trail.length is greater than maxPoints
+                    Remove first element from body.trail
+
+    // Advance simulation by deltaTime (seconds)
+    updateSimulation(deltaTime = 0.016)
+        // Convert real seconds to simulation seconds using multiplier
+        Add (deltaTime multiplied by this.timeMultiplier) to this.simulationTime
+        Call this.updateKeplerianOrbits()
+
+    // Get all bodies
+    getBodies()
+        Return this.bodies
+
+    // Get current simulation time
+    getSimulationTime()
+        Return this.simulationTime
+
+    // Set time multiplier
+    setTimeMultiplier(mult)
+        Assign Math.max(1, mult) to this.timeMultiplier
+
+    // Get visible bodies based on camera mode and settings
+    getVisibleBodies(cameraMode, showOuterPlanets, coordSystem)
+        If this.bodies is not an array
+            Return empty array
+        
+        // Camera mode 3 (planet focus) - show target planet and its satellites
+        If cameraMode equals 3 AND this.targetPlanet exists
+            Assign this.targetPlanet to targetName
+            Assign empty array to result
+            
+            // Find target planet
+            For i from 0 to this.bodies.length - 1
+                Assign this.bodies[i] to b
+                If b.name equals targetName OR b.key equals targetName
+                    Push b to result
+            
+            // Include children orbiting the target
+            For j from 0 to this.bodies.length - 1
+                Assign this.bodies[j] to c
+                If c.orbit exists AND (c.orbit.centralBody equals targetName OR (result[0] exists AND c.orbit.centralBody equals result[0].key))
+                    Push c to result
+            
+            If result.length is greater than 0
+                Return result
+            // Fall through to return all if target not found
+        
+        // If showOuterPlanets is false, filter to inner planets
+        If showOuterPlanets equals false
+            Assign empty array to filtered
+            For k from 0 to this.bodies.length - 1
+                Assign this.bodies[k] to p
+                
+                // Keep if no orbit data (safe default)
+                If NOT p.orbit exists OR NOT p.orbit.semiMajorAxis exists
+                    Push p to filtered
+                    Continue to next iteration
+                
+                // Keep inner planets within 6 AU
+                If p.orbit.semiMajorAxis is less than (6 multiplied by 149597870700)
+                    Push p to filtered
+            
+            Return filtered
+        
+        // Default: return all bodies
+        Return this.bodies
+
+End Define class SimulationController

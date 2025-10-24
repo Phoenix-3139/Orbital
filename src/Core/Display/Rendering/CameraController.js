@@ -58,7 +58,6 @@ export class CameraController {
 
         console.log('Camera System initialized with enhanced planet rendering');
         console.log(`Mode: ${cameraMode} (${this.coordSystem.cameraMode})`);
-        console.log(`Scale: ${this.coordSystem.getScaleDescription()}`);
         console.log(`Planet Scale Boost: ${planetScaleBoost}x`);
     }
 

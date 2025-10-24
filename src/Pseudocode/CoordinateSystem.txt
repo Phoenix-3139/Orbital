@@ -1,0 +1,208 @@
+// Universal Coordinate System for Solar System Simulation
+// Handles coordinate transformations and camera modes for different viewing perspectives
+
+Define class UniversalCoordinateSystem
+    constructor(canvasWidth = 1024, canvasHeight = 1024)
+        // Store canvas dimensions
+        Assign canvasWidth to this.canvasWidth
+        Assign canvasHeight to this.canvasHeight
+        
+        // Initialize camera position (center of view in world space)
+        Assign {x: 0, y: 0} to this.cameraCenter
+        
+        // How many meters each pixel represents (zoom level)
+        Assign 1e9 to this.metersPerPixel
+        
+        // Current camera mode
+        Assign 'SOLAR_SYSTEM' to this.cameraMode
+        
+        // Currently focused planet (if any)
+        Assign null to this.targetPlanet
+        
+        // Define fixed scale levels for each camera mode
+        Assign object to this.scales:
+            SOLAR_SYSTEM: 1.1e10    // 11 million km per pixel
+            INNER_PLANETS: 1e9      // 1 million km per pixel
+            PLANET: 5e5             // 500 km per pixel
+        
+        // Define planet size multipliers for visibility at each mode
+        Assign object to this.planetSizeMultipliers:
+            SOLAR_SYSTEM:
+                sunMultiplier: 0.1
+                planetMultiplier: 50.0
+                minPixelSize: 3.0
+            INNER_PLANETS:
+                sunMultiplier: 0.2
+                planetMultiplier: 15.0
+                minPixelSize: 2.5
+            PLANET:
+                sunMultiplier: 0.05
+                planetMultiplier: 1.0
+                minPixelSize: 2.0
+        
+        // Set initial scale based on mode
+        Assign this.scales[this.cameraMode] to this.metersPerPixel
+        
+        // Camera transition settings
+        Assign false to this.smoothTransitions
+        Assign 0.1 to this.transitionSpeed
+
+    // Convert world coordinates (meters) to screen coordinates (pixels)
+    worldToScreen(worldX, worldY)
+        // Calculate horizontal screen position
+        Assign (worldX - this.cameraCenter.x) divided by this.metersPerPixel to offsetX
+        Assign offsetX + (this.canvasWidth divided by 2) to screenX
+        
+        // Calculate vertical screen position
+        Assign (worldY - this.cameraCenter.y) divided by this.metersPerPixel to offsetY
+        Assign offsetY + (this.canvasHeight divided by 2) to screenY
+        
+        Return object with x: screenX, y: screenY
+
+    // Get planet size multipliers for current camera mode
+    getPlanetSizeMultipliers()
+        Return this.planetSizeMultipliers[this.cameraMode]
+
+    // Set camera mode using number (1, 2, or 3)
+    setCameraModeByNumber(modeNumber, targetPlanet = null)
+        // Define mode number mappings
+        Define modes as object:
+            1: 'SOLAR_SYSTEM'
+            2: 'INNER_PLANETS'
+            3: 'PLANET'
+        
+        // Get mode name from number
+        Assign modes[modeNumber] to mode
+        
+        If mode exists
+            Call this.setCameraMode(mode, targetPlanet)
+        Otherwise
+            Log warning: "Invalid camera mode number"
+
+    // Set camera mode directly
+    setCameraMode(mode, targetPlanet = null)
+        // Validate mode
+        If this.scales does not have property mode
+            Log warning: "Unknown mode, defaulting to SOLAR_SYSTEM"
+            Assign 'SOLAR_SYSTEM' to mode
+        
+        // Update mode and target
+        Assign mode to this.cameraMode
+        Assign targetPlanet to this.targetPlanet
+        
+        // Update scale for this mode
+        Assign this.scales[mode] to this.metersPerPixel
+        
+        // Set camera center based on mode
+        If mode equals 'SOLAR_SYSTEM' OR mode equals 'INNER_PLANETS'
+            // Center on system origin (Sun/barycenter)
+            Assign 0 to this.cameraCenter.x
+            Assign 0 to this.cameraCenter.y
+        
+        Otherwise if mode equals 'PLANET'
+            // Center on target planet if available
+            If targetPlanet exists AND targetPlanet.position exists
+                Assign targetPlanet.position.x to this.cameraCenter.x
+                Assign targetPlanet.position.y to this.cameraCenter.y
+            Otherwise
+                // Fallback to 1 AU on x-axis
+                Assign 1.496e11 to this.cameraCenter.x
+                Assign 0 to this.cameraCenter.y
+        
+        // Apply camera update immediately if smoothing disabled
+        If this.smoothTransitions is false
+            Call this.updateCamera()
+        
+        Log: "Camera mode set to: " concatenated with mode
+
+    // Update camera position
+    updateCamera()
+        // Only update if in planet mode with valid target
+        If this.cameraMode equals 'PLANET' AND this.targetPlanet exists AND this.targetPlanet.position exists
+            If this.smoothTransitions is true
+                // Smooth transition to target
+                Assign this.targetPlanet.position.x - this.cameraCenter.x to dx
+                Assign this.targetPlanet.position.y - this.cameraCenter.y to dy
+                Add dx multiplied by this.transitionSpeed to this.cameraCenter.x
+                Add dy multiplied by this.transitionSpeed to this.cameraCenter.y
+            Otherwise
+                // Instant snap to target
+                Assign this.targetPlanet.position.x to this.cameraCenter.x
+                Assign this.targetPlanet.position.y to this.cameraCenter.y
+
+    // Manually set camera position
+    setCameraPosition(x, y)
+        Assign x to this.cameraCenter.x
+        Assign y to this.cameraCenter.y
+
+    // Set scale with mode-appropriate limits
+    setScale(scale)
+        // Define limits for each mode
+        Define limits as object:
+            SOLAR_SYSTEM: {min: 1e9, max: 1e11}
+            INNER_PLANETS: {min: 5e8, max: 5e9}
+            PLANET: {min: 1e5, max: 1e8}
+        
+        // Get limit for current mode
+        Assign limits[this.cameraMode] to limit
+        
+        // Clamp scale to mode limits
+        Assign Math.max(limit.min, Math.min(limit.max, scale)) to this.metersPerPixel
+
+    // Zoom by factor
+    zoom(factor)
+        Call this.setScale(this.metersPerPixel divided by factor)
+
+    // Get current mode information
+    getModeInfo()
+        // Build info object
+        Create object with:
+            mode: this.cameraMode
+            scale: this.metersPerPixel
+            center: copy of this.cameraCenter
+            targetPlanet: this.targetPlanet ? this.targetPlanet.name : null
+            planetScaling: this.planetSizeMultipliers[this.cameraMode]
+        Return object
+
+    // Get visible planets for current mode
+    getVisiblePlanets(allBodies)
+        If this.cameraMode equals 'SOLAR_SYSTEM' OR this.cameraMode equals 'PLANET'
+            Return allBodies
+        
+        If this.cameraMode equals 'INNER_PLANETS'
+            // Define inner planet names
+            Assign ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars'] to innerPlanets
+            
+            // Filter bodies to only inner planets
+            Assign empty array to result
+            For i from 0 to allBodies.length - 1
+                Assign allBodies[i] to body
+                If body does not exist OR body.name does not exist
+                    Continue to next iteration
+                
+                // Check if body name is in inner planets list
+                For j from 0 to innerPlanets.length - 1
+                    If innerPlanets[j] equals body.name
+                        Push body to result
+                        Break inner loop
+            
+            Return result
+        
+        Otherwise
+            Return allBodies
+
+    // Check if object is visible on screen
+    isVisible(worldX, worldY, margin = 100)
+        // Convert to screen position
+        Assign this.worldToScreen(worldX, worldY) to screenPos
+        
+        // Check if within screen bounds (with margin)
+        If screenPos.x is greater than or equal to -margin AND
+           screenPos.x is less than or equal to this.canvasWidth + margin AND
+           screenPos.y is greater than or equal to -margin AND
+           screenPos.y is less than or equal to this.canvasHeight + margin
+            Return true
+        Otherwise
+            Return false
+
+End Define class UniversalCoordinateSystem

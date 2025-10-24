@@ -1,0 +1,179 @@
+// Camera Controller
+// Manages camera modes, scaling, and coordinate system interactions
+// Supports modes 1-3: Solar System, Inner Planets, Planet Focus
+
+Import UniversalCoordinateSystem from '../CoordinateSystem.js'
+
+Define class CameraController
+    constructor(canvasWidth, canvasHeight)
+        // Create coordinate system
+        Create new UniversalCoordinateSystem with canvasWidth, canvasHeight
+        Assign to this.coordSystem
+
+    // Initialize camera system
+    initCamera(cameraMode, targetPlanet, bodies, enableCameraSmoothing, planetScaleBoost,
+               overridePlanetScaling, manualSunMultiplier, manualPlanetMultiplier,
+               minPlanetPixels, manualZoom)
+        
+        Assign null to targetPlanetObj
+        
+        // If in planet mode (3) and target planet is specified
+        If cameraMode equals 3 AND targetPlanet exists
+            // Find target planet (case-insensitive)
+            Assign String(targetPlanet).toLowerCase() to tpLower
+            For i from 0 to bodies.length - 1
+                Assign bodies[i] to b
+                If NOT b exists OR NOT b.name exists
+                    Continue to next iteration
+                If b.name.toLowerCase() equals tpLower
+                    Assign b to targetPlanetObj
+                    Break loop
+            
+            If NOT targetPlanetObj exists
+                Log warning: "Target planet " concatenated with targetPlanet concatenated with " not found in bodies list."
+        
+        // Set camera mode using editor property (1, 2, or 3)
+        Call this.coordSystem.setCameraModeByNumber(cameraMode, targetPlanetObj)
+        
+        // Configure camera smoothing based on editor setting
+        Assign enableCameraSmoothing to this.coordSystem.smoothTransitions
+        
+        // Apply enhanced planet scaling for Mode 3
+        Call this._applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels)
+        
+        // Apply manual scaling overrides if enabled in editor
+        If overridePlanetScaling is true
+            Call this._applyManualScaling(manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels)
+        
+        // Apply manual zoom adjustment if specified
+        If manualZoom is not equal to 1.0
+            Call this.coordSystem.zoom(manualZoom)
+
+        Log: "Camera System initialized with enhanced planet rendering"
+        Log: "Mode: " concatenated with cameraMode concatenated with " (" concatenated with this.coordSystem.cameraMode concatenated with ")"
+        Log: "Planet Scale Boost: " concatenated with planetScaleBoost concatenated with "x"
+
+    // Apply Enhanced Planet Scaling for Mode 3
+    _applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels)
+        Assign this.coordSystem.cameraMode to currentMode
+        
+        If currentMode equals 'PLANET'
+            Assign object to this.coordSystem.planetSizeMultipliers[currentMode]:
+                sunMultiplier: 0.02
+                planetMultiplier: 5.0 multiplied by planetScaleBoost
+                minPixelSize: Math.max(8.0, minPlanetPixels)
+            
+            Log: "Enhanced planet scaling applied for Mode 3:"
+            Log: "  Planet Multiplier: " concatenated with (5.0 multiplied by planetScaleBoost) concatenated with "x"
+            Log: "  Minimum Size: " concatenated with Math.max(8.0, minPlanetPixels) concatenated with " pixels"
+        
+        Log: "Enhanced planet scaling applied for Mode " concatenated with cameraMode concatenated with ":"
+        Log: "  Current Mode: " concatenated with currentMode
+        Log: "  Planet Multiplier: " concatenated with this.coordSystem.planetSizeMultipliers[currentMode].planetMultiplier concatenated with "x"
+
+    // Apply Manual Scaling Overrides
+    _applyManualScaling(manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels)
+        Assign this.coordSystem.cameraMode to currentMode
+        
+        Assign object to this.coordSystem.planetSizeMultipliers[currentMode]:
+            sunMultiplier: manualSunMultiplier
+            planetMultiplier: manualPlanetMultiplier
+            minPixelSize: minPlanetPixels
+        
+        Log: "Manual scaling applied - Sun: " concatenated with manualSunMultiplier concatenated with "x, Planets: " concatenated with manualPlanetMultiplier concatenated with "x"
+
+    // Update Camera System (called each frame)
+    updateCamera(cameraMode, targetPlanet, bodies, planetScaleBoost, overridePlanetScaling, manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels, manualZoom)
+        // Check if camera mode changed in editor during runtime
+        If this.coordSystem.cameraMode is not equal to this._getCurrentModeString(cameraMode)
+            Assign null to targetPlanetObj
+            
+            If cameraMode equals 3 AND targetPlanet exists
+                // Find target planet
+                Assign String(targetPlanet).toLowerCase() to tpLower
+                For i from 0 to bodies.length - 1
+                    Assign bodies[i] to b
+                    If NOT b exists OR NOT b.name exists
+                        Continue to next iteration
+                    If b.name.toLowerCase() equals tpLower
+                        Assign b to targetPlanetObj
+                        Break loop
+            
+            Call this.coordSystem.setCameraModeByNumber(cameraMode, targetPlanetObj)
+            Call this._applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels)
+            
+            If overridePlanetScaling is true
+                Call this._applyManualScaling(manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels)
+
+        // Apply real-time scaling updates
+        If cameraMode equals 3
+            Call this._applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels)
+        
+        If overridePlanetScaling is true
+            Call this._applyManualScaling(manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels)
+
+        // Update camera position if following a planet in planet mode
+        If cameraMode equals 3 AND targetPlanet exists
+            Assign null to target
+            Assign String(targetPlanet).toLowerCase() to tpLower
+            For i from 0 to bodies.length - 1
+                Assign bodies[i] to b
+                If NOT b exists OR NOT b.name exists
+                    Continue to next iteration
+                If b.name.toLowerCase() equals tpLower
+                    Assign b to target
+                    Break loop
+            
+            If target exists
+                Assign target to this.coordSystem.targetPlanet
+                Call this.coordSystem.updateCamera()
+
+        // Adaptive scaling for mode 3
+        If cameraMode equals 3 AND targetPlanet exists
+            Call this._configurePlanetFocusView(targetPlanet, bodies, planetScaleBoost, manualZoom)
+
+    // Get Current Camera Mode as String
+    _getCurrentModeString(cameraMode)
+        Define modes as object:
+            1: 'SOLAR_SYSTEM'
+            2: 'INNER_PLANETS'
+            3: 'PLANET'
+        Return modes[cameraMode]
+
+    // Adaptive planet focus for mode 3
+    _configurePlanetFocusView(targetPlanetName, bodies, planetScaleBoost, manualZoom)
+        Assign null to planet
+        Assign String(targetPlanetName).toLowerCase() to tpLower
+        For i from 0 to bodies.length - 1
+            Assign bodies[i] to b
+            If NOT b exists OR NOT b.name exists
+                Continue to next iteration
+            If b.name.toLowerCase() equals tpLower
+                Assign b to planet
+                Break loop
+        
+        If NOT planet exists
+            Log warning: "Planet " concatenated with targetPlanetName concatenated with " not found for focus mode"
+            Return
+        
+        // Use custom scale if available, else fallback to default
+        Assign planetScales[planet.name.toLowerCase()] or 5e5 to scale
+        Assign scale divided by (planetScaleBoost multiplied by manualZoom) to metersPerPixel
+        
+        // Center camera on planet
+        Call this.coordSystem.setCameraPosition(planet.position.x, planet.position.y)
+        Call this.coordSystem.setScale(metersPerPixel)
+        Assign 'PLANET' to this.coordSystem.cameraMode
+
+End Define class CameraController
+
+// Planet-specific scale overrides for mode 3
+Define planetScales as object:
+    mercury: 1e7
+    venus: 1e7
+    earth: 1e7
+    mars: 1e7
+    jupiter: 1e7
+    saturn: 1e7
+    uranus: 1e7
+    neptune: 1e7

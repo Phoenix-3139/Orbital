@@ -41,8 +41,6 @@ export class Renderer {
             if (!(body.name === "Moon" && (cameraMode === 1||cameraMode === 2))) {
                 this.drawPlanetSprite(body, screenPos, radius);
             }
-        } else {
-            this.drawPlanetCircle(body, screenPos, radius);
         }
 
         if (radius >= 2 && !(body.name === "Earth-Moon Barycenter")) {
@@ -115,10 +113,12 @@ export class Renderer {
     //MARK: TRAIL RENDERING
 
     drawTrail(body) {
+        // Do not render trails for the Moon / satellites
+        if (!body || body.name === 'Moon' || String(body.satellite) === 'true') return;
+
         if (!body.trail || body.trail.length < 2) {
             return;
         }
-
 
         const points = [];
         for (let i = 0; i < body.trail.length; i++) {

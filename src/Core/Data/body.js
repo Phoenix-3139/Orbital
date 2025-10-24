@@ -81,7 +81,7 @@ export class Body {
             },
             isBarycenter: true
         },
-
+        //the reason we have earth-moon barycenter is to have moon orbit around it instead of earth directly
         earth: {
             name: 'Earth',
             mass: 5.97219e24,

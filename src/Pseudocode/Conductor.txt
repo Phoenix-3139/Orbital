@@ -1,0 +1,190 @@
+// Conductor (Drawer) - Main Orchestrator
+// Connects all components together in Wonderland Engine
+// Manages initialization, updates, and rendering coordination
+
+Import Component and Property from '@wonderlandengine/api'
+Import CanvasManager from './Rendering/CanvasManager.js'
+Import SimulationController from './Rendering/SimulationController.js'
+Import CameraController from './Rendering/CameraController.js'
+Import Renderer from './Rendering/Renderer.js'
+
+Define class Drawer extends Component
+    static TypeName = 'orbital-simulation'
+    
+    // Define editor properties
+    static Properties
+        material: Property.material()
+        bgColor: Property.string('#0a0a0a')
+        paused: Property.bool(false)
+        timeMultiplier: Property.float(2000000)
+        showOrbits: Property.bool(true)
+        enablePerturbations: Property.bool(false)
+        showOuterPlanets: Property.bool(true)
+        useRealScale: Property.bool(true)
+        planetScaleBoost: Property.float(3.0)
+        cameraMode: Property.int(1)
+        targetPlanet: Property.string('Earth')
+        minPlanetPixels: Property.float(4.0)
+
+    // Start component (called once)
+    start()
+        Log: 'Orbital Simulation starting...'
+        
+        Try
+            // Step 1: Initialize CanvasManager
+            Log: 'Initializing CanvasManager...'
+            Create new CanvasManager with this.engine, this.material, this.bgColor
+            Assign to this.canvasManager
+            
+            // Guard the initialize call
+            Assign false to canvasInitOk
+            Try
+                If this.canvasManager.initialize is a function
+                    Assign this.canvasManager.initialize() to canvasInitOk
+                Otherwise
+                    Assign true to canvasInitOk
+            Catch error e
+                Log error: 'CanvasManager.initialize() threw: ' concatenated with e
+                Assign false to canvasInitOk
+            
+            If canvasInitOk is false
+                Log error: 'Failed to initialize CanvasManager'
+                Assign false to this.initialized
+                Return
+            
+            // Step 2: Initialize SimulationController
+            Log: 'Initializing SimulationController...'
+            Create new SimulationController with this.timeMultiplier
+            Assign to this.simulationController
+            
+            // Step 3: Initialize CameraController
+            Log: 'Initializing CameraController...'
+            Create new CameraController with this.canvasManager.canvas.width, this.canvasManager.canvas.height
+            Assign to this.cameraController
+            
+            // Step 4: Initialize Renderer
+            Log: 'Initializing Renderer...'
+            Create new Renderer with this.canvasManager, this.cameraController.coordSystem
+            Assign to this.renderer
+            
+            // Step 5: Initialize simulation state
+            Log: 'Initializing simulation state...'
+            Call this.simulationController.initState()
+            
+            // Step 6: Initialize camera
+            Log: 'Initializing camera...'
+            Call this.cameraController.initCamera(
+                this.cameraMode,
+                this.targetPlanet,
+                this.simulationController.bodies,
+                false,                      // enableCameraSmoothing
+                this.planetScaleBoost,
+                false,                      // overridePlanetScaling
+                0,                          // manualSunMultiplier
+                0,                          // manualPlanetMultiplier
+                this.minPlanetPixels,
+                1.0                         // manualZoom
+            )
+            
+            // Mark as initialized
+            Assign true to this.initialized
+            Log: 'Orbital Simulation initialized successfully!'
+            
+        Catch error
+            Log error: 'Error during initialization: ' concatenated with error
+            Assign false to this.initialized
+
+    // Update each frame
+    update(dt)
+        // Check if properly initialized or paused
+        If NOT this.initialized OR this.paused is true
+            Return
+        
+        Try
+            // Update simulation with deltaTime
+            Call this.simulationController.updateSimulation(dt)
+            
+            // Update camera
+            Call this.cameraController.updateCamera(
+                this.cameraMode,
+                this.targetPlanet,
+                this.simulationController.bodies,
+                this.planetScaleBoost,
+                false,                      // overridePlanetScaling
+                0,                          // manualSunMultiplier
+                0,                          // manualPlanetMultiplier
+                this.minPlanetPixels,
+                1.0                         // manualZoom
+            )
+            
+            // Render frame
+            Call this._render()
+            
+        Catch error
+            Log error: 'Error during update: ' concatenated with error
+
+    // Internal render method
+    _render()
+        Try
+            // Clear screen
+            Call this.renderer.clear(this.bgColor)
+            
+            // Draw grid
+            Call this.renderer.drawGrid()
+            
+            // Get visible bodies based on camera mode and settings
+            Assign this.simulationController.getVisibleBodies(
+                this.cameraMode,
+                this.showOuterPlanets,
+                this.cameraController.coordSystem
+            ) to visibleBodies
+            
+            // Draw trails if enabled
+            If this.showOrbits is true
+                For i from 0 to visibleBodies.length - 1
+                    Call this.renderer.drawTrail(visibleBodies[i])
+            
+            // Draw all planets
+            For i from 0 to visibleBodies.length - 1
+                Call this.renderer.drawPlanet(
+                    visibleBodies[i],
+                    this.cameraMode,
+                    this.useRealScale,
+                    this.minPlanetPixels,
+                    this.planetScaleBoost
+                )
+            
+            // Draw UI overlay
+            Call this.renderer.drawUI(
+                this.cameraMode,
+                this.timeMultiplier,
+                this.simulationController.simulationTime,
+                this.targetPlanet,
+                this.useRealScale,
+                this.planetScaleBoost
+            )
+            
+            // Update canvas texture
+            Call this.canvasManager.updateTexture()
+            
+        Catch error
+            Log error: 'Error during rendering: ' concatenated with error
+
+    // Clean up on destroy
+    onDestroy()
+        Log: 'Cleaning up Orbital Simulation...'
+        Assign false to this.initialized
+
+    // Set camera mode (1, 2, or 3 only)
+    setCameraMode(mode)
+        Assign this.cameraMode to previousMode
+        Assign Math.min(3, Math.max(1, mode)) to this.cameraMode
+        Log: 'Camera mode changed from ' concatenated with previousMode concatenated with ' to ' concatenated with this.cameraMode
+
+    // Set target planet
+    setTargetPlanet(planetName)
+        Assign this.targetPlanet to previousPlanet
+        Assign planetName to this.targetPlanet
+        Log: 'Target planet changed to: ' concatenated with planetName
+
+End Define class Drawer

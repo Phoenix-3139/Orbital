@@ -175,7 +175,6 @@ export class UniversalCoordinateSystem {
         }
 
         console.log(`Camera mode set to: ${mode}`);
-        console.log(`Scale: ${this.getScaleDescription()}`);
     }
     /**
      * Update camera position
@@ -235,23 +234,6 @@ export class UniversalCoordinateSystem {
             targetPlanet: this.targetPlanet ? this.targetPlanet.name : null,
             planetScaling: this.planetSizeMultipliers[this.cameraMode]
         };
-    }
-
-    /**
-     * Get human-readable scale description
-     */
-    getScaleDescription() {
-        const scale = this.metersPerPixel;
-        
-        if (scale < 1000) {
-            return `${scale.toFixed(0)} m/px`;
-        } else if (scale < 1000000) {
-            return `${(scale / 1000).toFixed(1)} km/px`;
-        } else if (scale < 1000000000) {
-            return `${(scale / 1000000).toFixed(1)} Mm/px`;
-        } else {
-            return `${(scale / 1000000000).toFixed(1)} Gm/px`;
-        }
     }
 
     /**
