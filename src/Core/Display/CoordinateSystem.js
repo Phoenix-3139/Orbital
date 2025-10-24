@@ -52,24 +52,6 @@ export class UniversalCoordinateSystem {
         return { x: screenX, y: screenY };
     }
 
-     /**
-     * Convert a 1D world length (meters) to screen length (pixels) for a given mode.
-     */
-    worldtoScreen1D(length, mode)
-    {
-        const scaledLength = length*this.scales[mode];
-        return scaledLength;
-    }
-
-     /**
-     * Convert a 1D screen length (pixels) to world length (meters) for a given mode.
-     */
-    screentoWorld1D(length, mode)
-    {
-        const scaledLength = length/this.scales[mode];
-        return scaledLength;
-    }
-
     /**
      * Convert screen coordinates (pixels) to world coordinates (meters)
      */

@@ -150,4 +150,3 @@ export class SimulationController {
     }
 }
 
-export default SimulationController;

@@ -37,8 +37,6 @@ export class CameraController {
             }
         }
         
-
-
         // Set camera mode using editor property (1, 2, or 3)
         this.coordSystem.setCameraModeByNumber(cameraMode, targetPlanetObj);
         
@@ -208,8 +206,6 @@ export class CameraController {
         this.coordSystem.cameraMode = 'PLANET';
     }
 }
-
-export default CameraController;
 
 const planetScales = {
     mercury: 1e7,

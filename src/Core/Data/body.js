@@ -1,16 +1,16 @@
 /**
  * Celestial Body Class for Solar System Simulation
- * Contains physical properties, orbital mechanics data, and atmospheric modeling
+ * Contains physical properties, orbital mechanics data
  */
 
 export class Body {
-    // New, clearer constant names (keep old names as aliases for compatibility)
+   
     static AU = 149597870700;
     static G = 6.67430e-11;
     static GM_SUN = 1.32712440018e20; // m^3/s^2
     static GM_EARTH_MOON = 4.03503235502e14; // Combined Earth+Moon GM in m³/s²
 
-    // Planetary Database with atmospheric entries removed for simplicity
+    // Planetary Database with orbital properties
     static planetData = {
         sun: {
             name: 'Sun',

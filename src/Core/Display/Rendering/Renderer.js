@@ -1,9 +1,7 @@
-import ColorUtils from './ColorUtils.js';
-
 /**
  * Unified Renderer - All rendering in one place
  * Handles planets, trails, labels, UI, and grid
- * Simple and beginner-friendly
+
  */
 export class Renderer {
     constructor(canvasManager, coordSystem) {
@@ -11,8 +9,8 @@ export class Renderer {
         this.ctx = canvasManager.ctx;
         this.coordSystem = coordSystem;
         this.spriteCache = {};
-        
-        // Disable image smoothing for crisp sprites
+
+        //Set image smoothing false for better quality
         this.ctx.imageSmoothingEnabled = false;
     }
 
@@ -54,34 +52,12 @@ export class Renderer {
         }
     }
 
-    drawPlanetCircle(body, screenPos, radius) {
-        this.ctx.beginPath();
-        this.ctx.arc(screenPos.x, screenPos.y, radius, 0, Math.PI * 2);
-        this.ctx.fillStyle = body.color;
-        this.ctx.fill();
-
-
-        if (radius >= 2) {
-            this.ctx.strokeStyle = ColorUtils.adjustColorBrightness(body.color, 0.3);
-            this.ctx.lineWidth = Math.max(0.5, radius * 0.05);
-            this.ctx.stroke();
-        }
-    }
-
     drawPlanetSprite(body, screenPos, radius) 
     {
         const key = body.spritePath;
         
         if (this.spriteCache[key]) {
             this.ctx.drawImage(this.spriteCache[key], screenPos.x - radius, screenPos.y - radius, radius * 2, radius * 2);
-
-            /*if (radius >= 2) {
-                this.ctx.strokeStyle = ColorUtils.adjustColorBrightness(body.color, 0.3);
-                this.ctx.lineWidth = Math.max(0.5, radius * 0.05);
-                this.ctx.beginPath();
-                this.ctx.arc(screenPos.x, screenPos.y, radius, 0, Math.PI * 2);
-                this.ctx.stroke();
-            }*/
             return;
         }
 
@@ -151,7 +127,7 @@ export class Renderer {
         }
 
         const color = body.isBarycenter ? '#0000FF' : body.color;
-        const trailColor = ColorUtils.colorToRgba(color, 0.4);
+        const trailColor = colorToRgba(color, 0.4);
 
         this.ctx.strokeStyle = trailColor;
         this.ctx.lineWidth = 1;
@@ -168,36 +144,32 @@ export class Renderer {
     //MARK: GRID RENDERING
 
     drawGrid() {
-        const gridSpacing = 100;
-        const gridColor = 'rgba(255, 255, 255, 0.1)';
+        // Draw a dotted grid (no background image)
+        const spacing = 100;
+        const gridColor = 'rgba(255,255,255,0.08)';
 
+        this.ctx.save();
         this.ctx.strokeStyle = gridColor;
         this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([2, 6]); // dotted pattern
 
-        for (let x = 0; x <= this.canvas.width; x += gridSpacing) {
+        // vertical lines
+        for (let x = 0; x <= this.canvas.width; x += spacing) {
             this.ctx.beginPath();
-            this.ctx.moveTo(x, 0);
-            this.ctx.lineTo(x, this.canvas.height);
+            this.ctx.moveTo(x + 0.5, 0);
+            this.ctx.lineTo(x + 0.5, this.canvas.height);
             this.ctx.stroke();
         }
 
-        for (let y = 0; y <= this.canvas.height; y += gridSpacing) {
+        // horizontal lines
+        for (let y = 0; y <= this.canvas.height; y += spacing) {
             this.ctx.beginPath();
-            this.ctx.moveTo(0, y);
-            this.ctx.lineTo(this.canvas.width, y);
+            this.ctx.moveTo(0, y + 0.5);
+            this.ctx.lineTo(this.canvas.width, y + 0.5);
             this.ctx.stroke();
         }
 
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
-        const circles = [100, 200, 300, 400];
-
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-        for (let i = 0; i < circles.length; i++) {
-            this.ctx.beginPath();
-            this.ctx.arc(centerX, centerY, circles[i], 0, 2 * Math.PI);
-            this.ctx.stroke();
-        }
+        this.ctx.restore();
     }
 
     
@@ -205,82 +177,60 @@ export class Renderer {
 
     drawUI(cameraMode, timeMultiplier, simulationTime, targetPlanet, useRealScale, planetScaleBoost) {
         this.ctx.fillStyle = 'white';
-        this.ctx.font = '12px Arial';
+        this.ctx.font = '13px Arial';
         this.ctx.textAlign = 'left';
 
-        let y = 20;
         const x = 10;
+        let y = 20;
 
-        const modeNames = {1: 'Solar System', 2: 'Inner Planets', 3: 'Planet Focus'};
-        const modeText = modeNames[cameraMode] || 'Unknown';
-        
-        this.ctx.fillText('Mode: ' + modeText, x, y);
-        y += 15;
+        // Short time display
+        const days = Math.round(simulationTime / 86400);
+        const years = days / 365.25;
+        const timeText = years >= 1 ? `${years.toFixed(2)} years` : `${days} days`;
+        this.ctx.fillText(`Speed: ${Math.round(timeMultiplier)}x`, x, y); y += 18;
+        this.ctx.fillText(`Elapsed: ${timeText}`, x, y); y += 22;
 
-        this.ctx.fillText('Scale: ' + this.coordSystem.getScaleDescription(), x, y);
-        y += 15;
+        if (targetPlanet) {
+            // Kid-friendly one-line facts
+            const facts = {
+                'Sun': {line: 'A huge, hot star that lights our solar system.', size: 'Huge'},
+                'Mercury': {line: 'Tiny and speedy, very close to the Sun.', size: 'Tiny'},
+                'Venus': {line: 'Cloudy and bright with a very hot surface.', size: 'Small'},
+                'Earth': {line: 'Our home — the only planet known with life.', size: 'Medium'},
+                'Moon': {line: 'Earth’s companion that lights the night.', size: 'Tiny'},
+                'Mars': {line: 'The red planet with big volcanoes and valleys.', size: 'Small'},
+                'Jupiter': {line: 'A giant gas planet with a huge storm.', size: 'Huge'},
+                'Saturn': {line: 'Famous for its beautiful rings.', size: 'Huge'},
+                'Uranus': {line: 'A tilted, icy world that looks blue-green.', size: 'Large'},
+                'Neptune': {line: 'A windy, distant blue planet.', size: 'Large'}
+            };
+            const info = facts[targetPlanet] || {line: 'A mysterious world to discover!', size: 'Unknown'};
 
-        const multipliers = this.coordSystem.getPlanetSizeMultipliers();
-        this.ctx.fillText('Planet Scaling: Sun ' + multipliers.sunMultiplier + 'x, Planets ' + multipliers.planetMultiplier + 'x', x, y);
-        y += 15;
+            // Title
+            this.ctx.fillStyle = '#ffeb3b';
+            this.ctx.fillText(targetPlanet, x, y); y += 18;
 
-        if (cameraMode === 3) {
-            y += 5;
-            this.ctx.fillText('Planet Scale Boost: ' + planetScaleBoost + 'x', x, y);
-            y += 15;
-
-            if (targetPlanet) {
-                this.ctx.fillText('Following: ' + targetPlanet, x, y);
-                y += 15;
-            }
-        }
-
-        y += 5;
-        if (useRealScale) {
-            this.ctx.fillText('True Physical Scale Base', x, y);
-            y += 15;
-        }
-
-        y += 5;
-        this.ctx.fillText('Speed: ' + timeMultiplier.toFixed(0) + 'x', x, y);
-        y += 15;
-
-        const simDays = simulationTime / 86400;
-        let timeText;
-        if (simDays > 365) {
-            timeText = (simDays / 365.25).toFixed(2) + ' years';
+            // Fact and simple stats
+            this.ctx.fillStyle = 'white';
+            this.ctx.fillText(info.line, x, y); y += 18;
+            this.ctx.fillText(`Size: ${info.size}`, x, y); y += 18;
+            // Simple hint
+            this.ctx.fillStyle = 'rgba(255,255,255,0.85)';
         } else {
-            timeText = simDays.toFixed(1) + ' days';
-        }
-        this.ctx.fillText('Elapsed: ' + timeText, x, y);
-        y += 15;
-
-        if (this.coordSystem.cameraCenter) {
-            const center = this.coordSystem.cameraCenter;
-            this.ctx.fillText('Camera: (' + (center.x/1e9).toFixed(2) + ', ' + (center.y/1e9).toFixed(2) + ') Gm', x, y);
-            y += 15;
-        }
-
-        this.drawControlHints();
-    }
-
-    drawControlHints() {
-        // Bottom-right corner deprececated
-    }
-
-    // MARK: Utility to format distances
-
-    formatDistance(distance) {
-        if (distance > 1e11) {
-            return (distance / 1.496e11).toFixed(2) + ' AU';
-        } else if (distance > 1e9) {
-            return (distance / 1e9).toFixed(1) + ' Gm';
-        } else if (distance > 1e6) {
-            return (distance / 1e6).toFixed(1) + ' Mm';
-        } else {
-            return (distance / 1e3).toFixed(0) + ' km';
+            // Short guidance for kids
+            this.ctx.fillText('Pick a planet to see a fun fact!', x, y); y += 18;
+            this.ctx.fillText('Modes: 1 Solar System • 2 Inner Planets • 3 Planet Focus', x, y); y += 18;
+            this.ctx.fillText(`Current view: ${cameraMode}`, x, y);
         }
     }
 }
 
-export default Renderer;
+function colorToRgba(color, alpha) {
+    if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
+        const r = parseInt(color.slice(1,3), 16);
+        const g = parseInt(color.slice(3,5), 16);
+        const b = parseInt(color.slice(5,7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    return color;
+}
