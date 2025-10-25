@@ -1,0 +1,101 @@
+flowchart TD
+    Start([Renderer.js]) --> Constructor[Constructor canvasManager, coordSystem]
+    
+    Constructor --> InitVars[Initialize:<br/>canvas, ctx, coordSystem<br/>spriteCache = empty<br/>imageSmoothingEnabled = false]
+    
+    InitVars --> Operations{Rendering Operations}
+    
+    Operations --> Clear[clear bgColor]
+    Clear --> ClearLogic[Fill canvas with bgColor]
+    
+    Operations --> DrawPlanet[drawPlanet body, mode, useRealScale, minSize, boost]
+    
+    DrawPlanet --> CheckBary{Is barycenter<br/>AND mode ≠ 3?}
+    CheckBary -->|Yes| Skip[Return skip]
+    CheckBary -->|No| ConvertPos[worldToScreen body.position]
+    
+    ConvertPos --> IsBary{Is barycenter?}
+    IsBary -->|Yes| DrawBaryMarker[drawBarycenterMarker screenPos]
+    IsBary -->|No| CalcRad[calculateRadius body, mode, scale, min, boost]
+    
+    CalcRad --> UseReal{useRealScale?}
+    UseReal -->|No| LogScale[Logarithmic:<br/>max 2, log10 mass/1e20 × 2<br/>Apply scaleBoost if mode 3]
+    UseReal -->|Yes| RealScale[worldRadius = radius × 1000<br/>Get multipliers from coordSystem<br/>screenRadius = worldRadius / metersPerPixel × mult<br/>Enforce min pixels per mode]
+    
+    LogScale --> RadiusReady
+    RealScale --> RadiusReady[radius calculated]
+    
+    RadiusReady --> HasSprite{Has spritePath?}
+    HasSprite -->|Yes| MoonCheck{Is Moon AND<br/>mode 1 or 2?}
+    MoonCheck -->|Yes| SkipSprite[Skip sprite]
+    MoonCheck -->|No| DrawSprite[drawPlanetSprite body, pos, radius]
+    
+    DrawSprite --> SpriteCheck{In cache?}
+    SpriteCheck -->|Yes| DrawCached[drawImage cached sprite]
+    SpriteCheck -->|No| LoadImage[Create Image, set onload, cache it]
+    
+    DrawCached --> CheckLabel
+    LoadImage --> CheckLabel
+    SkipSprite --> CheckLabel
+    HasSprite -->|No| CheckLabel{radius >= 2 AND<br/>not EM-Bary?}
+    
+    CheckLabel -->|Yes| MoonLabel{Is Moon AND<br/>mode 1 or 2?}
+    MoonLabel -->|Yes| Done1
+    MoonLabel -->|No| DrawLabel[drawPlanetLabel text, x, y, radius, mode]
+    
+    DrawLabel --> CalcFont[fontSize based on mode:<br/>Mode 3: min 16, max 10, r×0.6<br/>Mode 2: min 14, max 8, r×0.8<br/>Default: 12px]
+    CalcFont --> DrawText[fillText at x, y with white]
+    
+    DrawText --> Done1[Planet drawn]
+    CheckLabel -->|No| Done1
+    DrawBaryMarker --> Done1
+    Skip --> Done1
+    
+    Operations --> DrawTrail[drawTrail body]
+    
+    DrawTrail --> MoonSat{Is Moon or<br/>satellite?}
+    MoonSat -->|Yes| SkipTrail[Skip trail]
+    MoonSat -->|No| HasTrail{trail exists AND<br/>length >= 2?}
+    
+    HasTrail -->|No| SkipTrail
+    HasTrail -->|Yes| ConvertTrail[Convert all trail points<br/>world to screen]
+    
+    ConvertTrail --> GetColor[color = barycenter ? blue : body.color<br/>Convert to rgba with 0.4 alpha]
+    GetColor --> DrawPath[strokeStyle = color<br/>lineWidth = 1<br/>Begin path, moveTo first<br/>lineTo each point, stroke]
+    
+    DrawPath --> Done2[Trail drawn]
+    SkipTrail --> Done2
+    
+    Operations --> DrawGrid[drawGrid]
+    
+    DrawGrid --> GridSetup[spacing = 100px<br/>color = rgba 255,255,255,0.08<br/>lineWidth = 1<br/>lineDash = dotted 2,6]
+    GridSetup --> VertLines[Loop vertical lines<br/>x = 0 to width by 100]
+    VertLines --> HorzLines[Loop horizontal lines<br/>y = 0 to height by 100]
+    HorzLines --> Done3[Grid drawn]
+    
+    Operations --> DrawUI[drawUI mode, timeMult, simTime, target, scale, boost]
+    
+    DrawUI --> UISetup[fillStyle = white<br/>font = 13px Arial<br/>textAlign = left<br/>x = 10, y = 20]
+    UISetup --> TimeCalc[Calculate days and years<br/>Draw Speed and Elapsed time]
+    
+    TimeCalc --> HasTarget{targetPlanet<br/>exists?}
+    HasTarget -->|Yes| ShowFacts[Draw planet name yellow<br/>Draw fun fact<br/>Draw size category]
+    HasTarget -->|No| ShowHelp[Draw help text:<br/>Pick planet for fun fact<br/>Mode explanations<br/>Current view mode]
+    
+    ShowFacts --> Done4[UI drawn]
+    ShowHelp --> Done4
+    
+    Operations --> ColorHelper[colorToRgba color, alpha]
+    
+    ColorHelper --> IsHex{Hex color?<br/>starts # AND<br/>length = 7?}
+    IsHex -->|Yes| ParseHex[Parse R G B from hex<br/>Return rgba R,G,B,alpha]
+    IsHex -->|No| ReturnRaw[Return color as-is]
+    
+    ParseHex --> Done5[Color converted]
+    ReturnRaw --> Done5
+    
+    style Start fill:#e1f5e1
+    style Operations fill:#e1f0ff
+    style CalcRad fill:#fff4e1
+    style DrawPath fill:#f0e1ff
+    style ShowFacts fill:#ffeb3b

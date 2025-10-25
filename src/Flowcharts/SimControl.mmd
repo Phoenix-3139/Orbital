@@ -1,0 +1,101 @@
+flowchart TD
+    Start([SimulationController.js]) --> Constructor[Constructor timeMultiplier, maxTrailPoints]
+    
+    Constructor --> InitVars[Initialize:<br/>• timeMultiplier default 2000000<br/>• simulationTime = 0 seconds<br/>• bodies = empty array<br/>• maxTrailPoints default 2000]
+    
+    InitVars --> Methods{Class Methods}
+    
+    Methods --> InitState[initState]
+    InitState --> CreateBodies[bodies = SolarSystem.createAllBodies]
+    CreateBodies --> EnsureTrails[For each body:<br/>If no trail array, create empty array]
+    EnsureTrails --> InitPositions[Call updateKeplerianOrbits<br/>Set positions at t=0]
+    
+    Methods --> UpdateOrbits[updateKeplerianOrbits]
+    UpdateOrbits --> Step1[Step 1: Update primary bodies]
+    
+    Step1 --> PrimaryLoop{For each body}
+    PrimaryLoop --> CheckPrimary{No orbit OR<br/>centralBody = sun?}
+    CheckPrimary -->|Yes| UpdatePrimary[body.updatePosition simulationTime]
+    CheckPrimary -->|No| PrimaryLoop
+    UpdatePrimary --> PrimaryLoop
+    
+    PrimaryLoop -->|Done| Step2[Step 2: Update secondary bodies]
+    
+    Step2 --> SecondaryLoop{For each body}
+    SecondaryLoop --> CheckSecondary{Has orbit AND<br/>centralBody ≠ sun?}
+    CheckSecondary -->|No| SecondaryLoop
+    CheckSecondary -->|Yes| FindParent[Get centralBody key<br/>Loop through bodies to find parent]
+    
+    FindParent --> UpdateRelative[body.updatePosition simulationTime<br/>Calculate relative position]
+    UpdateRelative --> HasParent{Parent found?}
+    HasParent -->|Yes| MakeAbsolute[body.position.x += parent.x<br/>body.position.y += parent.y]
+    HasParent -->|No| SecondaryLoop
+    MakeAbsolute --> SecondaryLoop
+    
+    SecondaryLoop -->|Done| Step3[Step 3: Update trails]
+    
+    Step3 --> TrailLoop{For each body}
+    TrailLoop --> EnsureArray[Ensure trail is array]
+    EnsureArray --> CalcMaxPoints[Calculate dynamic maxPoints]
+    
+    CalcMaxPoints --> IsEarth{Is Earth?}
+    IsEarth -->|Yes| EarthSpecial[period = body.getOrbitalPeriod<br/>dt = timeMultiplier × 0.016<br/>maxPoints = period/dt × 20000]
+    IsEarth -->|No| HasOrbitTrail{Has orbit?}
+    
+    HasOrbitTrail -->|Yes| NormalCalc[period = body.getOrbitalPeriod<br/>dt = timeMultiplier × 0.016<br/>maxPoints = period/dt × 2]
+    HasOrbitTrail -->|No| UseFallback[maxPoints = maxTrailPoints]
+    
+    EarthSpecial --> AddPoint
+    NormalCalc --> AddPoint
+    UseFallback --> AddPoint[Add current position to trail]
+    
+    AddPoint --> HasMethod{Has addToTrail<br/>method?}
+    HasMethod -->|Yes| CallMethod[body.addToTrail maxPoints]
+    HasMethod -->|No| ManualAdd[Push x, y to trail<br/>If length > max: shift oldest]
+    
+    CallMethod --> TrailLoop
+    ManualAdd --> TrailLoop
+    
+    TrailLoop -->|Done| OrbitsUpdated[Orbits and trails updated]
+    
+    Methods --> UpdateSim[updateSimulation deltaTime]
+    UpdateSim --> AdvanceTime[simulationTime += deltaTime × timeMultiplier]
+    AdvanceTime --> CallUpdate[Call updateKeplerianOrbits]
+    
+    Methods --> GetBodies[getBodies]
+    GetBodies --> ReturnBodies[Return bodies array]
+    
+    Methods --> GetTime[getSimulationTime]
+    GetTime --> ReturnTime[Return simulationTime]
+    
+    Methods --> SetMult[setTimeMultiplier mult]
+    SetMult --> ClampMult[timeMultiplier = max 1, mult]
+    
+    Methods --> GetVisible[getVisibleBodies cameraMode, showOuterPlanets, coordSystem]
+    GetVisible --> CheckArray{bodies is array?}
+    CheckArray -->|No| ReturnEmpty[Return empty array]
+    CheckArray -->|Yes| CheckMode{cameraMode = 3 AND<br/>targetPlanet exists?}
+    
+    CheckMode -->|Yes| FindTarget[Loop to find target by name or key]
+    FindTarget --> FindChildren[Loop to find bodies orbiting target<br/>Check orbit.centralBody matches]
+    FindChildren --> HasResults{Found target<br/>or children?}
+    HasResults -->|Yes| ReturnFiltered[Return filtered array]
+    HasResults -->|No| CheckOuter
+    
+    CheckMode -->|No| CheckOuter{showOuterPlanets<br/>= false?}
+    CheckOuter -->|Yes| FilterInner[Loop through bodies:<br/>Keep if no orbit data OR<br/>semiMajorAxis < 6 AU<br/>Return filtered array]
+    CheckOuter -->|No| ReturnAll[Return all bodies]
+    
+    FilterInner --> Done
+    ReturnAll --> Done
+    ReturnFiltered --> Done
+    ReturnEmpty --> Done
+    
+    Done([End of Class])
+    
+    style Start fill:#e1f5e1
+    style Methods fill:#e1f0ff
+    style Step1 fill:#fff4e1
+    style Step2 fill:#e1f0ff
+    style Step3 fill:#f0e1ff
+    style CalcMaxPoints fill:#ffeb3b

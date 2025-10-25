@@ -1,0 +1,95 @@
+flowchart TD
+    Start([Conductor.js - Drawer Component]) --> Extends[Extends WonderlandEngine Component]
+    
+    Extends --> TypeName[Static TypeName = 'orbital-simulation']
+    
+    TypeName --> Properties[Static Properties]
+    Properties --> PropsList[Define properties:<br/>• material<br/>• bgColor default '#0a0a0a'<br/>• paused default false<br/>• timeMultiplier default 2000000<br/>• showOrbits default true<br/>• enablePerturbations default false<br/>• showOuterPlanets default true<br/>• useRealScale default true<br/>• planetScaleBoost default 3.0<br/>• cameraMode default 1<br/>• targetPlanet default 'Earth'<br/>• minPlanetPixels default 4.0]
+    
+    PropsList --> Methods{Component Lifecycle Methods}
+    
+    Methods --> StartMethod[start]
+    
+    StartMethod --> LogStart[Log: Orbital Simulation starting]
+    LogStart --> TryBlock[Try-catch block for initialization]
+    
+    TryBlock --> InitCanvas[Create CanvasManager<br/>with engine, material, bgColor]
+    InitCanvas --> CheckInit{Has initialize<br/>method?}
+    
+    CheckInit -->|Yes| CallInit[Call canvasManager.initialize]
+    CheckInit -->|No| AssumeReady[Assume canvas ready]
+    
+    CallInit --> InitOK{Initialize<br/>successful?}
+    InitOK -->|No| LogError[Log error: Failed to initialize<br/>Set initialized = false<br/>Return]
+    InitOK -->|Yes| InitSim
+    AssumeReady --> InitSim[Create SimulationController<br/>with timeMultiplier]
+    
+    InitSim --> InitCam[Create CameraController<br/>with canvas width, height]
+    InitCam --> InitRenderer[Create Renderer<br/>with canvasManager, coordSystem]
+    
+    InitRenderer --> InitState[Call simulationController.initState]
+    InitState --> InitCameraCall[Call cameraController.initCamera with:<br/>• cameraMode<br/>• targetPlanet<br/>• bodies<br/>• smoothing: false<br/>• planetScaleBoost<br/>• override: false<br/>• manual multipliers: 0, 0<br/>• minPlanetPixels<br/>• zoom: 1.0]
+    
+    InitCameraCall --> SetFlag[Set initialized = true<br/>Log: Successfully initialized]
+    SetFlag --> StartDone
+    
+    TryBlock --> CatchError[Catch error:<br/>Log error<br/>Set initialized = false]
+    CatchError --> StartDone[Start complete]
+    LogError --> StartDone
+    
+    Methods --> UpdateMethod[update dt]
+    
+    UpdateMethod --> CheckInit2{initialized AND<br/>not paused?}
+    CheckInit2 -->|No| ReturnEarly[Return silently]
+    CheckInit2 -->|Yes| TryUpdate[Try-catch block for update]
+    
+    TryUpdate --> UpdateSim[Call simulationController.updateSimulation dt]
+    UpdateSim --> UpdateCam[Call cameraController.updateCamera with:<br/>• cameraMode<br/>• targetPlanet<br/>• bodies<br/>• planetScaleBoost<br/>• override: false<br/>• manual: 0, 0<br/>• minPlanetPixels<br/>• zoom: 1.0]
+    
+    UpdateCam --> CallRender[Call _render]
+    
+    TryUpdate --> CatchUpdate[Catch error:<br/>Log error during update]
+    CatchUpdate --> UpdateDone
+    CallRender --> UpdateDone[Update complete]
+    ReturnEarly --> UpdateDone
+    
+    Methods --> RenderMethod[_render private method]
+    
+    RenderMethod --> TryRender[Try-catch block for rendering]
+    TryRender --> ClearCanvas[Call renderer.clear bgColor]
+    ClearCanvas --> DrawGrid[Call renderer.drawGrid]
+    
+    DrawGrid --> GetVisible[visibleBodies = simulationController.getVisibleBodies<br/>cameraMode, showOuterPlanets, coordSystem]
+    
+    GetVisible --> ShowOrbitsCheck{showOrbits?}
+    ShowOrbitsCheck -->|Yes| TrailLoop[Loop through visibleBodies:<br/>Call renderer.drawTrail for each]
+    ShowOrbitsCheck -->|No| PlanetLoop
+    TrailLoop --> PlanetLoop[Loop through visibleBodies:<br/>Call renderer.drawPlanet for each with:<br/>body, cameraMode, useRealScale,<br/>minPlanetPixels, planetScaleBoost]
+    
+    PlanetLoop --> DrawUICall[Call renderer.drawUI with:<br/>• cameraMode<br/>• timeMultiplier<br/>• simulationTime<br/>• targetPlanet<br/>• useRealScale<br/>• planetScaleBoost]
+    
+    DrawUICall --> UpdateTexture[Call canvasManager.updateTexture]
+    UpdateTexture --> RenderDone
+    
+    TryRender --> CatchRender[Catch error:<br/>Log error during rendering]
+    CatchRender --> RenderDone[Render complete]
+    
+    Methods --> DestroyMethod[onDestroy]
+    DestroyMethod --> LogCleanup[Log: Cleaning up<br/>Set initialized = false]
+    
+    Methods --> SetMode[setCameraMode mode]
+    SetMode --> SavePrevMode[previousMode = cameraMode]
+    SavePrevMode --> ClampMode[cameraMode = clamp mode, 1, 3]
+    ClampMode --> LogModeChange[Log: Mode changed from X to Y]
+    
+    Methods --> SetPlanet[setTargetPlanet planetName]
+    SetPlanet --> SavePrevPlanet[previousPlanet = targetPlanet]
+    SavePrevPlanet --> UpdatePlanet[targetPlanet = planetName]
+    UpdatePlanet --> LogPlanetChange[Log: Target planet changed]
+    
+    style Start fill:#e1f5e1
+    style Methods fill:#e1f0ff
+    style TryBlock fill:#fff4e1
+    style TryUpdate fill:#e1f0ff
+    style TryRender fill:#f0e1ff
+    style GetVisible fill:#ffeb3b
