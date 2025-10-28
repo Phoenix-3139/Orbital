@@ -20,6 +20,7 @@ export class Body {
             SOI: 1e13,
             priority: 3,
             spritePath: 'Sun.png',
+            position: { x: 0, y: 0 }
         },
 
         mercury: {
@@ -38,7 +39,8 @@ export class Body {
                 argumentOfPeriapsis: 29.124 * (Math.PI / 180), // in radians
                 meanAnomalyAtEpoch: 174.796 * (Math.PI / 180), // in radians
                 centralBody: 'sun' // central body name
-            }
+            },
+            position: { x: 0, y: 0 }
         },
 
         venus: {
@@ -58,7 +60,8 @@ export class Body {
                 meanAnomalyAtEpoch: 50.115 * (Math.PI / 180),
                 epochTime: 0,
                 centralBody: 'sun'
-            }
+            },
+            position: { x: 0, y: 0 }
         },
 
         earthMoonBarycenter: {
@@ -79,7 +82,8 @@ export class Body {
                 epochTime: 0, // This means that at time 0, the position corresponds to the above elements
                 centralBody: 'sun'
             },
-            isBarycenter: true
+            isBarycenter: true,
+            position: { x: 0, y: 0 }
         },
         //the reason we have earth-moon barycenter is to have moon orbit around it instead of earth directly
         earth: {
@@ -101,7 +105,8 @@ export class Body {
                 period: 27.321582 * 24 * 3600,
                 centralBody: 'earthMoonBarycenter',
                 gravitationalParameter: Body.GM_EARTH_MOON
-            }
+            },
+            position: { x: 0, y: 0 }
         },
 
         moon: {
@@ -124,7 +129,8 @@ export class Body {
                 period: 27.321582 * 24 * 3600,
                 centralBody: 'earthMoonBarycenter',
                 gravitationalParameter: Body.GM_EARTH_MOON
-            }
+            },
+            position: { x: 0, y: 0 }
         },
 
         mars: {
@@ -144,7 +150,8 @@ export class Body {
                 meanAnomalyAtEpoch: 19.412 * (Math.PI / 180),
                 epochTime: 0,
                 centralBody: 'sun'
-            }
+            },
+            position: { x: 0, y: 0 }
         },
 
         jupiter: {
@@ -164,7 +171,8 @@ export class Body {
                 meanAnomalyAtEpoch: 20.020 * (Math.PI / 180),
                 epochTime: 0,
                 centralBody: 'sun'
-            }
+            },
+            position: { x: 0, y: 0 }
         },
 
         saturn: {
@@ -184,7 +192,8 @@ export class Body {
                 meanAnomalyAtEpoch: 317.020 * (Math.PI / 180),
                 epochTime: 0,
                 centralBody: 'sun'
-            }
+            },
+            position: { x: 0, y: 0 }
         },
 
         uranus: {
@@ -204,7 +213,8 @@ export class Body {
                 meanAnomalyAtEpoch: 142.238 * (Math.PI / 180),
                 epochTime: 0,
                 centralBody: 'sun'
-            }
+            },
+            position: { x: 0, y: 0 }
         },
 
         neptune: {
@@ -224,7 +234,8 @@ export class Body {
                 meanAnomalyAtEpoch: 256.228 * (Math.PI / 180),
                 epochTime: 0,
                 centralBody: 'sun'
-            }
+            },
+            position: { x: 0, y: 0 }
         }
     };
 

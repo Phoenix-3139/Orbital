@@ -95,6 +95,7 @@ export class SimulationController {
                 }
             }
         }
+
     }
 
     // Advance simulation by deltaTime (seconds)
