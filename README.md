@@ -29,4 +29,4 @@ Simulation loop: src/Core/Display/Rendering/SimulationController.js
 Rendering: src/Core/Display/Rendering/Renderer.js and CanvasManager.js
 Integration component: src/Core/Display/Conductor.js
 Planet data: src/Core/Data/body.js
-Interaction components: src/Interaction/*Button.js
+Interaction components: src/Interaction/*Button.js 
