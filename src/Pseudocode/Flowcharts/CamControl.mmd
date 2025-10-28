@@ -1,0 +1,102 @@
+flowchart TD
+    Start([CameraController.js]) --> Constructor[Constructor canvasWidth, canvasHeight]
+    
+    Constructor --> InitCoord[Create UniversalCoordinateSystem<br/>with canvas dimensions]
+    
+    InitCoord --> Methods{Class Methods}
+    
+    Methods --> InitCamera[initCamera mode, target, bodies, smoothing, boost, override, sunMult, planetMult, minPx, zoom]
+    
+    InitCamera --> FindTarget{mode = 3 AND<br/>targetPlanet exists?}
+    FindTarget -->|Yes| SearchTarget[Loop through bodies<br/>Find by name case-insensitive]
+    SearchTarget --> TargetFound{Found?}
+    TargetFound -->|No| WarnTarget[Log warning: target not found]
+    TargetFound -->|Yes| SetTarget[Set targetPlanetObj]
+    
+    FindTarget -->|No| SetMode
+    WarnTarget --> SetMode
+    SetTarget --> SetMode[coordSystem.setCameraModeByNumber mode, target]
+    
+    SetMode --> EnableSmooth[coordSystem.smoothTransitions = enableCameraSmoothing]
+    EnableSmooth --> ApplyEnhanced[Call _applyEnhancedPlanetScaling mode, boost, minPx]
+    
+    ApplyEnhanced --> CheckOverride{overridePlanetScaling?}
+    CheckOverride -->|Yes| ApplyManual[Call _applyManualScaling sunMult, planetMult, minPx]
+    CheckOverride -->|No| CheckZoom
+    ApplyManual --> CheckZoom{manualZoom ≠ 1.0?}
+    
+    CheckZoom -->|Yes| ApplyZoom[coordSystem.zoom manualZoom]
+    CheckZoom -->|No| LogInit
+    ApplyZoom --> LogInit[Log: Camera initialized<br/>Mode and boost info]
+    
+    Methods --> EnhancedScaling[_applyEnhancedPlanetScaling mode, boost, minPx]
+    
+    EnhancedScaling --> GetMode[currentMode = coordSystem.cameraMode]
+    GetMode --> IsPlanetMode{currentMode = PLANET?}
+    
+    IsPlanetMode -->|Yes| SetMultipliers[Set planetSizeMultipliers PLANET:<br/>sunMultiplier: 0.02<br/>planetMultiplier: 5.0 × boost<br/>minPixelSize: max 8.0, minPx]
+    SetMultipliers --> LogEnhanced[Log enhanced scaling info]
+    
+    IsPlanetMode -->|No| LogEnhanced
+    LogEnhanced --> LogCurrent[Log current mode multipliers]
+    
+    Methods --> ManualScaling[_applyManualScaling sunMult, planetMult, minPx]
+    
+    ManualScaling --> GetModeManual[currentMode = coordSystem.cameraMode]
+    GetModeManual --> SetManual[Set planetSizeMultipliers currentMode:<br/>sunMultiplier: sunMult<br/>planetMultiplier: planetMult<br/>minPixelSize: minPx]
+    SetManual --> LogManual[Log manual scaling applied]
+    
+    Methods --> UpdateCamera[updateCamera mode, target, bodies, boost, override, sunMult, planetMult, minPx, zoom]
+    
+    UpdateCamera --> ModeChanged{coordSystem.cameraMode ≠<br/>_getCurrentModeString mode?}
+    
+    ModeChanged -->|Yes| FindTargetUpdate[If mode 3 and target:<br/>Loop to find targetPlanetObj]
+    FindTargetUpdate --> SetModeUpdate[coordSystem.setCameraModeByNumber]
+    SetModeUpdate --> ApplyEnhancedUpdate[Call _applyEnhancedPlanetScaling]
+    ApplyEnhancedUpdate --> CheckOverrideUpdate{overridePlanetScaling?}
+    CheckOverrideUpdate -->|Yes| ApplyManualUpdate[Call _applyManualScaling]
+    CheckOverrideUpdate -->|No| RealTimeUpdates
+    ApplyManualUpdate --> RealTimeUpdates
+    
+    ModeChanged -->|No| RealTimeUpdates[Apply real-time updates]
+    
+    RealTimeUpdates --> IsMode3{mode = 3?}
+    IsMode3 -->|Yes| ApplyEnhanced3[Call _applyEnhancedPlanetScaling]
+    IsMode3 -->|No| CheckOverrideRT
+    ApplyEnhanced3 --> CheckOverrideRT{overridePlanetScaling?}
+    
+    CheckOverrideRT -->|Yes| ApplyManualRT[Call _applyManualScaling]
+    CheckOverrideRT -->|No| FollowPlanet
+    ApplyManualRT --> FollowPlanet{mode = 3 AND<br/>targetPlanet exists?}
+    
+    FollowPlanet -->|Yes| FindFollow[Loop to find target body]
+    FindFollow --> FoundFollow{Found?}
+    FoundFollow -->|Yes| SetCoordTarget[coordSystem.targetPlanet = target<br/>coordSystem.updateCamera]
+    FoundFollow -->|No| AdaptiveCheck
+    SetCoordTarget --> AdaptiveCheck
+    
+    FollowPlanet -->|No| UpdateDone
+    AdaptiveCheck -->|mode 3 and target| ConfigureFocus[Call _configurePlanetFocusView]
+    AdaptiveCheck -->|Otherwise| UpdateDone[Camera updated]
+    ConfigureFocus --> UpdateDone
+    
+    Methods --> GetModeString[_getCurrentModeString mode]
+    GetModeString --> MapNumber[Map number to string:<br/>1 → SOLAR_SYSTEM<br/>2 → INNER_PLANETS<br/>3 → PLANET<br/>Return string]
+    
+    Methods --> ConfigureFocus2[_configurePlanetFocusView targetName, bodies, boost, zoom]
+    
+    ConfigureFocus2 --> FindPlanet[Loop to find planet by name]
+    FindPlanet --> PlanetFound{Found?}
+    PlanetFound -->|No| WarnNotFound[Log warning: planet not found<br/>Return]
+    PlanetFound -->|Yes| GetScale[scale = planetScales name or 5e5<br/>metersPerPixel = scale / boost × zoom]
+    
+    GetScale --> CenterCamera[coordSystem.setCameraPosition planet.x, planet.y<br/>coordSystem.setScale metersPerPixel<br/>coordSystem.cameraMode = PLANET]
+    
+    Start --> Constants[Constant: planetScales]
+    Constants --> ScalesList[Object with planet-specific scales:<br/>mercury: 1e7<br/>venus: 1e7<br/>earth: 1e7<br/>mars: 1e7<br/>jupiter: 1e7<br/>saturn: 1e7<br/>uranus: 1e7<br/>neptune: 1e7]
+    
+    style Start fill:#e1f5e1
+    style Methods fill:#e1f0ff
+    style SetMultipliers fill:#fff4e1
+    style FollowPlanet fill:#f0e1ff
+    style ConfigureFocus fill:#ffeb3b

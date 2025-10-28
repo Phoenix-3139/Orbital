@@ -21,5 +21,3 @@ export class ToggleOrbitsButton extends Component {
         this.drawerComponent.showOrbits = !this.drawerComponent.showOrbits;
     }
 }
-
-export default ToggleOrbitsButton;

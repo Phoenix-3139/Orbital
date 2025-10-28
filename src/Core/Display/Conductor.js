@@ -53,7 +53,6 @@ export class Drawer extends Component {
             }
 
             console.log('Initializing SimulationController...');
-            // removed undefined this.maxTrailLength argument (was causing issues)
             this.simulationController = new SimulationController(this.timeMultiplier);
             
             console.log('Initializing CameraController...');
@@ -86,6 +85,8 @@ export class Drawer extends Component {
         if (!this.initialized || this.paused) {
             return;
         }
+
+        
 
         try {
             // Update simulation with deltaTime

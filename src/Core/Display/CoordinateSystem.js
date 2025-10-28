@@ -52,24 +52,6 @@ export class UniversalCoordinateSystem {
         return { x: screenX, y: screenY };
     }
 
-     /**
-     * Convert a 1D world length (meters) to screen length (pixels) for a given mode.
-     */
-    worldtoScreen1D(length, mode)
-    {
-        const scaledLength = length*this.scales[mode];
-        return scaledLength;
-    }
-
-     /**
-     * Convert a 1D screen length (pixels) to world length (meters) for a given mode.
-     */
-    screentoWorld1D(length, mode)
-    {
-        const scaledLength = length/this.scales[mode];
-        return scaledLength;
-    }
-
     /**
      * Convert screen coordinates (pixels) to world coordinates (meters)
      */
@@ -193,7 +175,6 @@ export class UniversalCoordinateSystem {
         }
 
         console.log(`Camera mode set to: ${mode}`);
-        console.log(`Scale: ${this.getScaleDescription()}`);
     }
     /**
      * Update camera position
@@ -253,23 +234,6 @@ export class UniversalCoordinateSystem {
             targetPlanet: this.targetPlanet ? this.targetPlanet.name : null,
             planetScaling: this.planetSizeMultipliers[this.cameraMode]
         };
-    }
-
-    /**
-     * Get human-readable scale description
-     */
-    getScaleDescription() {
-        const scale = this.metersPerPixel;
-        
-        if (scale < 1000) {
-            return `${scale.toFixed(0)} m/px`;
-        } else if (scale < 1000000) {
-            return `${(scale / 1000).toFixed(1)} km/px`;
-        } else if (scale < 1000000000) {
-            return `${(scale / 1000000).toFixed(1)} Mm/px`;
-        } else {
-            return `${(scale / 1000000000).toFixed(1)} Gm/px`;
-        }
     }
 
     /**

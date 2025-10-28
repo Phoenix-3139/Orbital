@@ -1,0 +1,87 @@
+flowchart TD
+    Start([KeplerianOrbit.js]) --> Class1[Class: Orbit]
+    
+    Class1 --> OrbitConstructor[Constructor orbitData, GM]
+    OrbitConstructor --> OrbitInit[Initialize orbital elements:<br/>• semiMajorAxis a<br/>• eccentricity e<br/>• inclination i<br/>• longitudeOfAscendingNode Ω<br/>• argumentOfPeriapsis ω<br/>• meanAnomalyAtEpoch M₀<br/>• epochTime<br/>• GM gravitational parameter]
+    
+    OrbitInit --> CalcMeanMotion[Calculate mean motion:<br/>n = √ GM/a³]
+    CalcMeanMotion --> OrbitMethods{Orbit Methods}
+    
+    OrbitMethods --> GetPosition[getPositionAtTime currentTime]
+    GetPosition --> TimeSince[timeSinceEpoch = currentTime - epochTime]
+    TimeSince --> CalcMean[meanAnomaly M = M₀ + n × Δt]
+    CalcMean --> SolveKepler[Call solveKeplersEquation M]
+    
+    SolveKepler --> Normalize[Normalize M to -π to π]
+    Normalize --> InitialGuess{eccentricity < 0.8?}
+    InitialGuess -->|Yes| GuessM[Initial E = M]
+    InitialGuess -->|No| GuessPi[Initial E = π]
+    
+    GuessM --> NewtonLoop
+    GuessPi --> NewtonLoop[Newton-Raphson iteration:<br/>maxIterations = 50<br/>tolerance = 1e-12]
+    
+    NewtonLoop --> CalcError[error = E - e×sinE - M<br/>derivative = 1 - e×cosE<br/>delta = error / derivative]
+    CalcError --> UpdateE[E = E - delta]
+    UpdateE --> CheckConv{abs delta < tolerance?}
+    
+    CheckConv -->|No| CalcError
+    CheckConv -->|Yes| ReturnE[Return E]
+    
+    ReturnE --> ConvertTrue[Call eccentricToTrue E]
+    ConvertTrue --> TrueCalc[cosE = cos E<br/>sinE = sin E<br/>sqrtTerm = √ 1-e²<br/>ν = atan2 sqrtTerm×sinE, cosE-e]
+    TrueCalc --> CalcDist[distance r = a × 1 - e×cosE]
+    CalcDist --> Calc2D[angle = ν + ω<br/>x = r × cos angle<br/>y = r × sin angle]
+    Calc2D --> ReturnPos[Return x, y, distance, ν, E, M]
+    
+    OrbitMethods --> GetPeriod[getOrbitalPeriod]
+    GetPeriod --> PeriodCalc[period = 2π / n<br/>Return period in seconds]
+    
+    Start --> Class2[Class: CelestialBody]
+    
+    Class2 --> BodyConstructor[Constructor name, mass, radius, color, orbit, spritePath]
+    BodyConstructor --> BodyInit[Initialize:<br/>• name, mass, radius, color<br/>• orbit can be null for Sun<br/>• spritePath<br/>• position: x: 0, y: 0<br/>• velocity: x: 0, y: 0<br/>• trail: empty array]
+    
+    BodyInit --> BodyMethods{CelestialBody Methods}
+    
+    BodyMethods --> UpdatePos[updatePosition currentTime]
+    UpdatePos --> HasOrbit{orbit exists?}
+    HasOrbit -->|No| SkipSun[Return Sun doesn't move]
+    HasOrbit -->|Yes| GetState[state = orbit.getPositionAtTime currentTime]
+    GetState --> SetPos[position.x = state.x<br/>position.y = state.y]
+    
+    BodyMethods --> AddTrail[addToTrail maxTrailLength]
+    AddTrail --> PushPoint[Push current x, y to trail array]
+    PushPoint --> CheckLength{trail.length > max?}
+    CheckLength -->|Yes| RemoveOld[Remove oldest point shift]
+    CheckLength -->|No| TrailDone[Trail updated]
+    RemoveOld --> TrailDone
+    
+    BodyMethods --> GetBodyPeriod[getOrbitalPeriod]
+    GetBodyPeriod --> HasOrbitPeriod{orbit exists?}
+    HasOrbitPeriod -->|Yes| CallOrbitPeriod[Return orbit.getOrbitalPeriod]
+    HasOrbitPeriod -->|No| ReturnNull[Return null]
+    
+    Start --> Class3[Class: SolarSystem]
+    
+    Class3 --> Factory[Static Method: createAllBodies]
+    Factory --> InitArray[bodies = empty array]
+    InitArray --> LoopData{For each in Body.planetData}
+    
+    LoopData -->|Sun| CreateSun[No orbit for Sun<br/>Create CelestialBody:<br/>name, mass, radius, color<br/>orbit = null, spritePath<br/>Set position: 0, 0]
+    CreateSun --> AddSun[Push to bodies array]
+    AddSun --> LoopData
+    
+    LoopData -->|Planet| GetGM[GM = Body.getGravitationalParameter key]
+    GetGM --> CreateOrbit[Create new Orbit planetData.orbit, GM]
+    CreateOrbit --> CreatePlanet[Create new CelestialBody:<br/>name, mass, radius, color<br/>orbit, spritePath]
+    CreatePlanet --> AddPlanet[Push to bodies array]
+    AddPlanet --> LoopData
+    
+    LoopData -->|Done| ReturnBodies[Return bodies array]
+    
+    style Start fill:#e1f5e1
+    style OrbitMethods fill:#e1f0ff
+    style BodyMethods fill:#e1f0ff
+    style NewtonLoop fill:#fff4e1
+    style Calc2D fill:#f0e1ff
+    style CheckConv fill:#ffe1e1

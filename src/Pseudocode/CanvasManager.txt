@@ -1,0 +1,43 @@
+// Canvas and Texture Management
+// Handles canvas creation and Wonderland Engine texture setup
+
+Define class CanvasManager
+    constructor(engine, material, bgColor = '#0a0a0a')
+        Assign engine to this.engine
+        Assign material to this.material
+        Assign bgColor to this.bgColor
+        
+        Assign null to this.canvas
+        Assign null to this.ctx
+        Assign null to this.tex
+
+    // Initialize canvas and texture (from original start() method)
+    initialize()
+        // Create HTML5 Canvas for rendering the simulation
+        Assign document.createElement('canvas') to this.canvas
+        Assign 1024 to this.canvas.width
+        Assign 1024 to this.canvas.height
+        Assign this.canvas.getContext('2d') to this.ctx
+        
+        // Initialize canvas with background color before creating texture
+        Assign this.bgColor to this.ctx.fillStyle
+        Call this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+        
+        // Create Wonderland Engine texture from canvas
+        Assign this.engine.textures.create(this.canvas) to this.tex
+        
+        // Apply texture to material if material is assigned
+        If this.material exists
+            Assign this.tex to this.material.flatTexture
+        Otherwise
+            Log error: 'Material not assigned to orbital-simulation component'
+            Return false
+        
+        Return true
+
+    // Update texture (called at end of each frame)
+    updateTexture()
+        If this.tex exists
+            Call this.tex.update()
+
+End Define class CanvasManager

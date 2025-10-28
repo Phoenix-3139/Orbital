@@ -41,11 +41,6 @@ export class CanvasManager {
         return true;
    }
 
-    // *** ADD MISSING METHOD - SurfaceRenderer needs this ***
-    getContext() {
-        return this.ctx;
-    }
-
     /**
      * Update texture (called at end of each frame)
      */
@@ -55,15 +50,5 @@ export class CanvasManager {
         }
     }
 
-    /**
-     * Clear canvas with background color
-     */
-    clearCanvas() {
-        if (this.ctx) {
-            this.ctx.fillStyle = this.bgColor;
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        }
-    }
 }
 
-export default CanvasManager;

@@ -1,0 +1,180 @@
+// ORBITAL MECHANICS
+// This file calculates where planets are at any given time.
+// It uses Kepler's laws (elliptical orbits).
+
+Import Body from '../Data/body.js'
+
+// Stores the shape and timing of an orbit
+Define class Orbit
+    constructor(orbitData, gravitationalParameter = Body.GM_SUN)
+        // Orbit shape (how stretched/tilted the ellipse is)
+        Assign orbitData.semiMajorAxis to this.semiMajorAxis
+        Assign orbitData.eccentricity to this.eccentricity
+        
+        // Orbit orientation (which way it's tilted/rotated)
+        Assign orbitData.inclination or 0 to this.inclination
+        Assign orbitData.longitudeOfAscendingNode or 0 to this.longitudeOfAscendingNode
+        Assign orbitData.argumentOfPeriapsis or 0 to this.argumentOfPeriapsis
+        
+        // Orbit timing (where the planet starts)
+        Assign orbitData.meanAnomalyAtEpoch or 0 to this.meanAnomalyAtEpoch
+        Assign orbitData.epochTime or 0 to this.epochTime
+        
+        // Physics constant (bigger = faster orbit)
+        Assign gravitationalParameter to this.GM
+        
+        // Calculate how fast the planet moves (radians per second)
+        Assign sqrt(this.GM / (this.semiMajorAxis ^ 3)) to this.meanMotion
+        
+        // Remember what this orbits around
+        Assign orbitData.centralBody to this.centralBody
+
+    // Calculate position at a specific time (2D only)
+    getPositionAtTime(currentTime)
+        // Step 1: How much time has passed?
+        Assign currentTime - this.epochTime to timeSinceEpoch
+        
+        // Step 2: Where SHOULD the planet be? (mean anomaly)
+        Assign this.meanAnomalyAtEpoch + this.meanMotion * timeSinceEpoch to meanAnomaly
+        
+        // Step 3: Solve Kepler's equation (where IS the planet?)
+        Assign this.solveKeplersEquation(meanAnomaly) to eccentricAnomaly
+        
+        // Step 4: Convert to actual angle (true anomaly)
+        Assign this.eccentricToTrue(eccentricAnomaly) to trueAnomaly
+        
+        // Step 5: Calculate distance from center
+        Assign this.semiMajorAxis * (1 - this.eccentricity * cos(eccentricAnomaly)) to distance
+        
+        // Step 6: 2D position in orbital plane
+        Assign trueAnomaly + this.argumentOfPeriapsis to angle
+        Assign distance * cos(angle) to x
+        Assign distance * sin(angle) to y
+        Return object with x, y, distance, trueAnomaly, eccentricAnomaly, meanAnomaly
+
+    // Solve Kepler's equation using iteration (IMPROVED)
+    solveKeplersEquation(meanAnomaly)
+        // Normalize mean anomaly to [-π, π] for better convergence
+        Assign ((meanAnomaly + π) mod (2 * π)) - π to M
+        
+        // Better initial guess based on eccentricity
+        If this.eccentricity < 0.8
+            Assign M to eccentricAnomaly
+        Otherwise
+            Assign π to eccentricAnomaly
+        
+        Assign 50 to maxIterations
+        Assign 1e-12 to tolerance
+        
+        // Newton-Raphson iteration with convergence check
+        For i from 0 to maxIterations - 1
+            Assign eccentricAnomaly - this.eccentricity * sin(eccentricAnomaly) - M to error
+            Assign 1 - this.eccentricity * cos(eccentricAnomaly) to derivative
+            Assign error / derivative to delta
+            Assign eccentricAnomaly - delta to eccentricAnomaly
+            
+            // Stop when we're close enough
+            If abs(delta) < tolerance
+                Break loop
+        
+        Return eccentricAnomaly
+
+    // Convert eccentric anomaly to true anomaly
+    eccentricToTrue(eccentricAnomaly)
+        Assign cos(eccentricAnomaly) to cosE
+        Assign sin(eccentricAnomaly) to sinE
+        Assign sqrt(max(0, 1 - this.eccentricity * this.eccentricity)) to sqrtTerm
+        Return atan2(sqrtTerm * sinE, cosE - this.eccentricity)
+
+    // How long does one orbit take? (in seconds)
+    getOrbitalPeriod()
+        Return (2 * π) / this.meanMotion
+
+End Define class Orbit
+
+// A planet/moon with position, velocity, trail
+
+Define class CelestialBody
+    constructor(name, mass, radius, color, orbit, spritePath = null)
+        Assign name to this.name
+        Assign mass to this.mass
+        Assign radius to this.radius
+        Assign color to this.color
+        Assign orbit to this.orbit  // Can be null for Sun
+        Assign spritePath to this.spritePath
+
+        Assign {x: 0, y: 0} to this.position
+        Assign {x: 0, y: 0} to this.velocity
+        Assign empty array to this.trail
+
+    // Update position based on current simulation time
+    updatePosition(currentTime)
+        If this.orbit does not exist
+            Return  // Sun doesn't move
+        
+        Assign this.orbit.getPositionAtTime(currentTime) to state
+        Assign state.x to this.position.x
+        Assign state.y to this.position.y
+
+    // Add current position to trail
+    addToTrail(maxTrailLength = 2000)
+        Push {x: this.position.x, y: this.position.y} to this.trail
+        
+        // Keep trail from getting too long
+        If this.trail.length > maxTrailLength
+            Remove first element from this.trail
+
+    // How long is one orbit?
+    getOrbitalPeriod()
+        If this.orbit exists
+            Return this.orbit.getOrbitalPeriod()
+        Otherwise
+            Return null
+
+End Define class CelestialBody
+
+// Creates all planets from the data
+
+Define class SolarSystem
+    static createAllBodies()
+        Assign empty array to bodies
+
+        // Loop through all planets in our data
+        For each entry (key, planetData) in Body.planetData
+            
+            // Skip Sun (it doesn't have an orbit)
+            If planetData.orbit does not exist
+                Create new CelestialBody with:
+                    name: planetData.name
+                    mass: planetData.mass
+                    radius: planetData.radius
+                    color: planetData.color
+                    orbit: null
+                    spritePath: planetData.spritePath
+                Assign it to sun
+                Assign {x: 0, y: 0} to sun.position
+                Push sun to bodies
+                Continue to next iteration
+
+            // Get the right gravity constant
+            Assign Body.getGravitationalParameter(key) to GM
+
+            // Create the orbit
+            Create new Orbit with planetData.orbit and GM
+            Assign it to orbit
+
+            // Create the body
+            Create new CelestialBody with:
+                name: planetData.name
+                mass: planetData.mass
+                radius: planetData.radius
+                color: planetData.color
+                orbit: orbit
+                spritePath: planetData.spritePath
+            Assign it to body
+
+            Push body to bodies
+
+        Return bodies
+
+End Define class SolarSystem

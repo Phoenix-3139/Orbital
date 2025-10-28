@@ -21,5 +21,3 @@ export class PauseToggleButton extends Component {
         this.drawerComponent.paused = !this.drawerComponent.paused;
     }
 }
-
-export default PauseToggleButton;

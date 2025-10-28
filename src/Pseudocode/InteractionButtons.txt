@@ -1,0 +1,137 @@
+// Interaction Buttons
+// VR button components for controlling the simulation
+
+// Common imports
+Import Component and Property from '@wonderlandengine/api'
+Import CursorTarget from '@wonderlandengine/components'
+Import Drawer from '../Core/Display/Conductor.js'
+
+// File 1: CameraModeNextButton
+
+Define class CameraModeNextButton extends Component
+    static TypeName = 'camera-mode-next-button'
+    
+    static Properties
+        drawerObject: Property.object()
+
+    start()
+        // Get or add CursorTarget component for VR interaction
+        Assign this.object.getComponent(CursorTarget) or this.object.addComponent(CursorTarget) to this.target
+        
+        // Get Drawer component from the specified object
+        If this.drawerObject exists
+            Assign this.drawerObject.getComponent(Drawer) to this.drawerComponent
+        Otherwise
+            Assign null to this.drawerComponent
+        
+        // Bind the onDown method to this instance
+        Assign this.onDown.bind(this) to this.onDown
+        
+        // Register click handler
+        Call this.target.onDown.add(this.onDown)
+
+    onDown()
+        // Exit if no drawer component
+        If NOT this.drawerComponent exists
+            Return
+        
+        // Get current mode (default to 1 if invalid)
+        Assign Number(this.drawerComponent.cameraMode) or 1 to cur
+        
+        // Cycle to next mode: 1 -> 2 -> 3 -> 1
+        Assign (cur mod 3) + 1 to this.drawerComponent.cameraMode
+
+End Define class CameraModeNextButton
+
+
+// File 2: PauseToggleButton
+
+Define class PauseToggleButton extends Component
+    static TypeName = 'pause-toggle-button'
+    
+    static Properties
+        drawerObject: Property.object()
+
+    start()
+        // Get or add CursorTarget component for VR interaction
+        Assign this.object.getComponent(CursorTarget) or this.object.addComponent(CursorTarget) to this.target
+        
+        // Get Drawer component from the specified object
+        If this.drawerObject exists
+            Assign this.drawerObject.getComponent(Drawer) to this.drawerComponent
+        Otherwise
+            Assign null to this.drawerComponent
+        
+        // Bind the onDown method to this instance
+        Assign this.onDown.bind(this) to this.onDown
+        
+        // Register click handler
+        Call this.target.onDown.add(this.onDown)
+
+    onDown()
+        // Exit if no drawer component
+        If NOT this.drawerComponent exists
+            Return
+        
+        // Toggle pause state
+        Assign NOT this.drawerComponent.paused to this.drawerComponent.paused
+
+End Define class PauseToggleButton
+
+
+// File 3: PlanetCycleButton
+
+Define class PlanetCycleButton extends Component
+    static TypeName = 'planet-cycle-button'
+    
+    static Properties
+        drawerObject: Property.object()
+        planetList: Property.string('Mercury,Venus,Earth,Mars,Jupiter,Saturn,Uranus,Neptune')
+
+    start()
+        // Get or add CursorTarget component for VR interaction
+        Assign this.object.getComponent(CursorTarget) or this.object.addComponent(CursorTarget) to this.target
+        
+        // Get Drawer component from the specified object
+        If this.drawerObject exists
+            Assign this.drawerObject.getComponent(Drawer) to this.drawerComponent
+        Otherwise
+            Assign null to this.drawerComponent
+        
+        // Parse comma-separated planet list
+        Assign (this.planetList or '').split(',') to planetArray
+        Assign empty array to this.planets
+        For each p in planetArray
+            Assign p.trim() to trimmed
+            If trimmed.length is greater than 0
+                Push trimmed to this.planets
+        
+        // Initialize current index
+        Assign 0 to this.currentIndex
+        
+        // Bind the onDown method to this instance
+        Assign this.onDown.bind(this) to this.onDown
+        
+        // Register click handler
+        Call this.target.onDown.add(this.onDown)
+
+    onDown()
+        // Exit if no drawer component
+        If NOT this.drawerComponent exists
+            Return
+        
+        // Only cycle in planet focus mode (mode 3)
+        If Number(this.drawerComponent.cameraMode) is not equal to 3
+            Return
+        
+        // Exit if no planets in list
+        If NOT this.planets exists OR this.planets.length equals 0
+            Return
+        
+        // Cycle to next planet
+        Assign (this.currentIndex + 1) mod this.planets.length to this.currentIndex
+        
+        // Set target planet on drawer
+        Assign this.planets[this.currentIndex] to this.drawerComponent.targetPlanet
+
+End Define class PlanetCycleButton

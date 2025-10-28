@@ -65,16 +65,37 @@ export class SimulationController {
             // Ensure trail exists
             if (!Array.isArray(body.trail)) body.trail = [];
 
+            // Calculate dynamic trail length: one full orbit + buffer
+            let maxPoints = this.maxTrailPoints; // fallback
+            
+            // Special case: Earth-Moon system (Earth orbits the barycenter with ~27-day period)
+            if (body.name === 'Earth' && body.orbit) {
+                const period = body.getOrbitalPeriod();
+                if (period && period > 0) {
+                    const dt = this.timeMultiplier * 0.016;
+                    // increase trail length for earth to capture full orbit around barycenter
+                    maxPoints = Math.ceil((period / dt) * 20000);
+                }
+            } else if (body.orbit) {
+                // Normal planets
+                const period = body.getOrbitalPeriod();
+                if (period && period > 0) {
+                    const dt = this.timeMultiplier * 0.016; // simulation seconds per frame
+                    maxPoints = Math.ceil((period / dt) * 2); // 1 orbit + 100%
+                }
+            }
+            
             // Use body's own addToTrail if present, else fallback
             if (typeof body.addToTrail === 'function') {
-                body.addToTrail(this.maxTrailPoints);
+                body.addToTrail(maxPoints);
             } else {
                 body.trail.push({ x: body.position.x, y: body.position.y });
-                if (body.trail.length > this.maxTrailPoints) {
+                if (body.trail.length > maxPoints) {
                     body.trail.shift();
                 }
             }
         }
+
     }
 
     // Advance simulation by deltaTime (seconds)
@@ -150,4 +171,3 @@ export class SimulationController {
     }
 }
 
-export default SimulationController;

@@ -22,5 +22,3 @@ export class CameraModeNextButton extends Component {
         this.drawerComponent.cameraMode = (cur % 3) + 1;
     }
 }
-
-export default CameraModeNextButton;

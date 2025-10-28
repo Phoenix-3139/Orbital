@@ -1,0 +1,246 @@
+// Celestial Body Class for Solar System Simulation
+// Contains physical properties, orbital mechanics data, and atmospheric modeling
+
+Define class Body
+    Define AU as 149597870700
+    Define G as 6.67430e-11
+    Define GM_SUN as 1.32712440018e20    // m^3/s^2
+    Define GM_EARTH_MOON as 4.03503235502e14    // Combined Earth+Moon GM in m³/s²
+
+    // Planetary Database with orbital properties
+    Define planetData as object with fields:
+        sun:
+            name: 'Sun'
+            mass: 1.9884e30
+            radius: 695700
+            color: 'yellow'
+            SOI: 1e13
+            priority: 3
+            spritePath: 'Sun.png'
+
+        mercury:
+            name: 'Mercury'
+            mass: 3.302e23    // in kg
+            radius: 2439.4    // in km
+            color: 'gray'
+            SOI: 1.1e7    // in meters
+            priority: 1    // High priority for rendering
+            spritePath: 'Mercury.png'
+            orbit:
+                semiMajorAxis: 0.387 * Body.AU    // in meters
+                eccentricity: 0.206
+                inclination: 7.005 * (π / 180)
+                longitudeOfAscendingNode: 48.331 * (π / 180)
+                argumentOfPeriapsis: 29.124 * (π / 180)
+                meanAnomalyAtEpoch: 174.796 * (π / 180)
+                centralBody: 'sun'
+
+        venus:
+            name: 'Venus'
+            mass: 4.8685e24
+            radius: 6051.84
+            color: 'orange'
+            SOI: 6.2e7
+            priority: 1
+            spritePath: 'Venus.png'
+            orbit:
+                semiMajorAxis: 0.723 * Body.AU
+                eccentricity: 0.007
+                inclination: 3.39458 * (π / 180)
+                longitudeOfAscendingNode: 76.68069 * (π / 180)
+                argumentOfPeriapsis: 54.85229 * (π / 180)
+                meanAnomalyAtEpoch: 50.115 * (π / 180)
+                epochTime: 0
+                centralBody: 'sun'
+
+        earthMoonBarycenter:
+            name: 'Earth-Moon Barycenter'
+            mass: 5.97219e24 + 7.349e22
+            radius: 0
+            color: 'transparent'
+            SOI: 9.25e8
+            priority: 2
+            spritePath: 'Earth.png'
+            orbit:
+                semiMajorAxis: 1.000 * Body.AU
+                eccentricity: 0.017
+                inclination: 0.00005 * (π / 180)
+                longitudeOfAscendingNode: -11.26064 * (π / 180)
+                argumentOfPeriapsis: 114.20783 * (π / 180)
+                meanAnomalyAtEpoch: 357.51716 * (π / 180)
+                epochTime: 0    // position corresponds to elements at time 0
+                centralBody: 'sun'
+            isBarycenter: true
+
+        earth:
+            name: 'Earth'
+            mass: 5.97219e24
+            radius: 6371.01
+            color: 'blue'
+            SOI: 9.25e8
+            priority: 1
+            spritePath: 'Earth.png'
+            orbit:
+                semiMajorAxis: 4671e3
+                eccentricity: 0.0549
+                inclination: 5.145 * (π / 180)
+                longitudeOfAscendingNode: 125.08 * (π / 180)
+                argumentOfPeriapsis: 318.15 * (π / 180)
+                meanAnomalyAtEpoch: 135.27 * (π / 180)
+                epochTime: 0
+                period: 27.321582 * 24 * 3600
+                centralBody: 'earthMoonBarycenter'
+                gravitationalParameter: Body.GM_EARTH_MOON
+
+        moon:
+            name: 'Moon'
+            mass: 7.349e22
+            radius: 1737.53
+            color: 'gray'
+            SOI: 6.61e7
+            priority: 1
+            satellite: 'true'
+            spritePath: 'Moon.png'
+            orbit:
+                semiMajorAxis: 384400e3
+                eccentricity: 0.05490
+                inclination: 5.145 * (π / 180)
+                longitudeOfAscendingNode: 125.08 * (π / 180)
+                argumentOfPeriapsis: 318.15 * (π / 180)
+                meanAnomalyAtEpoch: 315.27 * (π / 180)
+                epochTime: 0
+                period: 27.321582 * 24 * 3600
+                centralBody: 'earthMoonBarycenter'
+                gravitationalParameter: Body.GM_EARTH_MOON
+
+        mars:
+            name: 'Mars'
+            mass: 6.4171e23
+            radius: 3389.92
+            color: 'red'
+            SOI: 5.77e8
+            priority: 1
+            spritePath: 'Mars.png'
+            orbit:
+                semiMajorAxis: 1.524 * Body.AU
+                eccentricity: 0.093
+                inclination: 1.850 * (π / 180)
+                longitudeOfAscendingNode: 49.57854 * (π / 180)
+                argumentOfPeriapsis: 286.46230 * (π / 180)
+                meanAnomalyAtEpoch: 19.412 * (π / 180)
+                epochTime: 0
+                centralBody: 'sun'
+
+        jupiter:
+            name: 'Jupiter'
+            mass: 1.89819e27
+            radius: 69911
+            color: '#DAA520'
+            SOI: 4.82e9
+            priority: 1
+            spritePath: 'Jupiter.png'
+            orbit:
+                semiMajorAxis: 5.203 * Body.AU
+                eccentricity: 0.048
+                inclination: 1.305 * (π / 180)
+                longitudeOfAscendingNode: 100.55615 * (π / 180)
+                argumentOfPeriapsis: 273.867 * (π / 180)
+                meanAnomalyAtEpoch: 20.020 * (π / 180)
+                epochTime: 0
+                centralBody: 'sun'
+
+        saturn:
+            name: 'Saturn'
+            mass: 5.6834e26
+            radius: 58232
+            color: '#FAD5A5'
+            SOI: 8.5e8
+            priority: 1
+            spritePath: 'Saturn.png'
+            orbit:
+                semiMajorAxis: 9.537 * Body.AU
+                eccentricity: 0.054
+                inclination: 2.485 * (π / 180)
+                longitudeOfAscendingNode: 113.665 * (π / 180)
+                argumentOfPeriapsis: 339.392 * (π / 180)
+                meanAnomalyAtEpoch: 317.020 * (π / 180)
+                epochTime: 0
+                centralBody: 'sun'
+
+        uranus:
+            name: 'Uranus'
+            mass: 8.6813e25
+            radius: 25362
+            color: '#4FD0E3'
+            SOI: 3.9e8
+            priority: 1
+            spritePath: 'Uranus.png'
+            orbit:
+                semiMajorAxis: 19.19 * Body.AU
+                eccentricity: 0.047
+                inclination: 0.773 * (π / 180)
+                longitudeOfAscendingNode: 74.006 * (π / 180)
+                argumentOfPeriapsis: 96.998 * (π / 180)
+                meanAnomalyAtEpoch: 142.238 * (π / 180)
+                epochTime: 0
+                centralBody: 'sun'
+
+        neptune:
+            name: 'Neptune'
+            mass: 1.02409e26
+            radius: 24624
+            color: '#4169E1'
+            SOI: 2.27e8
+            priority: 1
+            spritePath: 'Neptune.png'
+            orbit:
+                semiMajorAxis: 30.07 * Body.AU
+                eccentricity: 0.009
+                inclination: 1.769 * (π / 180)
+                longitudeOfAscendingNode: 131.784 * (π / 180)
+                argumentOfPeriapsis: 265.646 * (π / 180)
+                meanAnomalyAtEpoch: 256.228 * (π / 180)
+                epochTime: 0
+                centralBody: 'sun'
+
+    end Define planetData
+
+    isBarycenter(bodyKey)
+        If Body.planetData does not have key bodyKey
+            Return false
+        If Body.planetData[bodyKey] has field isBarycenter and Body.planetData[bodyKey].isBarycenter is equal to true
+            Return true
+        Otherwise
+            Return false
+
+    getGravitationalParameter(bodyKey)
+        Assign Body.planetData[bodyKey] to bodyData
+
+        If bodyData exists AND bodyData has field orbit AND bodyData.orbit has field gravitationalParameter
+            Return bodyData.orbit.gravitationalParameter
+
+        If bodyData exists AND bodyData has field orbit AND bodyData.orbit has field centralBody
+            Assign bodyData.orbit.centralBody to centralBody
+        Otherwise
+            Assign null to centralBody
+
+        If centralBody is equal to 'sun'
+            Return Body.GM_SUN
+        Otherwise if centralBody is equal to 'earthMoonBarycenter'
+            Return Body.GM_EARTH_MOON
+
+        Return Body.GM_SUN
+
+    getDisplayRadius()
+        Assign this.mass divided by 1e20 to tmp
+        Assign log10(tmp) to val
+        Assign val * 2 to scaled
+        If scaled is less than 2
+            Return 2
+        Otherwise
+            Return scaled
+
+    getWorldRadius()
+        Return this.radius * 1000
+
+End Define class Body

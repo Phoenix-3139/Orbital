@@ -37,8 +37,6 @@ export class CameraController {
             }
         }
         
-
-
         // Set camera mode using editor property (1, 2, or 3)
         this.coordSystem.setCameraModeByNumber(cameraMode, targetPlanetObj);
         
@@ -60,7 +58,6 @@ export class CameraController {
 
         console.log('Camera System initialized with enhanced planet rendering');
         console.log(`Mode: ${cameraMode} (${this.coordSystem.cameraMode})`);
-        console.log(`Scale: ${this.coordSystem.getScaleDescription()}`);
         console.log(`Planet Scale Boost: ${planetScaleBoost}x`);
     }
 
@@ -208,8 +205,6 @@ export class CameraController {
         this.coordSystem.cameraMode = 'PLANET';
     }
 }
-
-export default CameraController;
 
 const planetScales = {
     mercury: 1e7,

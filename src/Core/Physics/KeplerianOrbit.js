@@ -6,12 +6,11 @@
 
 import { Body } from '../Data/body.js';
 
-
 // MARK: 1: THE ORBIT CLASS
 // Stores the shape and timing of an orbit
 
 export class Orbit {
-    constructor(orbitData, gravitationalParameter = Body.GM_SUN, use3D = false) {
+    constructor(orbitData, gravitationalParameter = Body.GM_SUN) {
         // Orbit shape (how stretched/tilted the ellipse is)
         this.semiMajorAxis = orbitData.semiMajorAxis;  // Size of orbit
         this.eccentricity = orbitData.eccentricity;    // How elliptical (0=circle, 0.9=very stretched)
@@ -33,12 +32,9 @@ export class Orbit {
         
         // Remember what this orbits around
         this.centralBody = orbitData.centralBody;
-        
-        // NEW: 3D mode flag
-        this.use3D = use3D;
     }
 
-    // Calculate position at a specific time
+    // Calculate position at a specific time (2D only)
     getPositionAtTime(currentTime) {
         // Step 1: How much time has passed?
         const timeSinceEpoch = currentTime - this.epochTime;
@@ -55,43 +51,11 @@ export class Orbit {
         // Step 5: Calculate distance from center
         const distance = this.semiMajorAxis * (1 - this.eccentricity * Math.cos(eccentricAnomaly));
         
-        // Step 6: Calculate position (2D or 3D based on mode)
-        if (this.use3D) {
-            return this.compute3DPosition(trueAnomaly, distance, eccentricAnomaly, meanAnomaly);
-        } else {
-            // Original 2D calculation
-            const angle = trueAnomaly + this.argumentOfPeriapsis;
-            const x = distance * Math.cos(angle);
-            const y = distance * Math.sin(angle);
-            return { x, y, distance, trueAnomaly };
-        }
-    }
-
-    // NEW: Compute full 3D position with inclination and node rotation
-    compute3DPosition(trueAnomaly, distance, eccentricAnomaly, meanAnomaly) {
-        // Argument of latitude (angle from ascending node)
-        const u = this.argumentOfPeriapsis + trueAnomaly;
-        
-        // Precompute trig functions
-        const cosU = Math.cos(u);
-        const sinU = Math.sin(u);
-        const cosOmega = Math.cos(this.longitudeOfAscendingNode);
-        const sinOmega = Math.sin(this.longitudeOfAscendingNode);
-        const cosI = Math.cos(this.inclination);
-        const sinI = Math.sin(this.inclination);
-        
-        // Transform from orbital plane to inertial frame (3D rotation)
-        const x = distance * (cosOmega * cosU - sinOmega * sinU * cosI);
-        const y = distance * (sinOmega * cosU + cosOmega * sinU * cosI);
-        const z = distance * (sinU * sinI);
-        
-        return {
-            x, y, z,
-            distance,
-            trueAnomaly,
-            eccentricAnomaly,
-            meanAnomaly
-        };
+        // Step 6: 2D position in orbital plane
+        const angle = trueAnomaly + this.argumentOfPeriapsis;
+        const x = distance * Math.cos(angle);
+        const y = distance * Math.sin(angle);
+        return { x, y, distance, trueAnomaly, eccentricAnomaly, meanAnomaly };
     }
 
     // Solve Kepler's equation using iteration (IMPROVED)
@@ -137,17 +101,16 @@ export class Orbit {
 // A planet/moon with position, velocity, trail
 
 export class CelestialBody {
-    constructor(name, mass, radius, color, orbit, spritePath = null, use3D = false) {
+    constructor(name, mass, radius, color, orbit, spritePath = null) {
         this.name = name;
         this.mass = mass;
         this.radius = radius;
         this.color = color;
         this.orbit = orbit;  // Can be null for Sun
         this.spritePath = spritePath;
-        this.use3D = use3D;
 
-        this.position = use3D ? { x: 0, y: 0, z: 0 } : { x: 0, y: 0 };
-        this.velocity = use3D ? { x: 0, y: 0, z: 0 } : { x: 0, y: 0 };
+        this.position = { x: 0, y: 0 };
+        this.velocity = { x: 0, y: 0 };
         this.trail = [];
     }
 
@@ -160,18 +123,11 @@ export class CelestialBody {
         const state = this.orbit.getPositionAtTime(currentTime);
         this.position.x = state.x;
         this.position.y = state.y;
-        if (this.use3D && state.z !== undefined) {
-            this.position.z = state.z;
-        }
     }
 
     // Add current position to trail
     addToTrail(maxTrailLength = 2000) {
-        if (this.use3D) {
-            this.trail.push({ x: this.position.x, y: this.position.y, z: this.position.z });
-        } else {
-            this.trail.push({ x: this.position.x, y: this.position.y });
-        }
+        this.trail.push({ x: this.position.x, y: this.position.y });
         
         // Keep trail from getting too long
         if (this.trail.length > maxTrailLength) {
@@ -190,7 +146,7 @@ export class CelestialBody {
 // Creates all planets from the data
 
 export class SolarSystem {
-    static createAllBodies(use3D = false) {
+    static createAllBodies() {
         const bodies = [];
 
         // Loop through all planets in our data
@@ -204,10 +160,9 @@ export class SolarSystem {
                     planetData.radius,
                     planetData.color,
                     null,                     // No orbit
-                    planetData.spritePath,
-                    use3D
+                    planetData.spritePath
                 );
-                sun.position = use3D ? { x: 0, y: 0, z: 0 } : { x: 0, y: 0 };
+                sun.position = { x: 0, y: 0 };
                 bodies.push(sun);
                 continue;
             }
@@ -215,8 +170,8 @@ export class SolarSystem {
             // Get the right gravity constant
             const GM = Body.getGravitationalParameter(key);
 
-            // Create the orbit with 3D flag
-            const orbit = new Orbit(planetData.orbit, GM, use3D);
+            // Create the orbit
+            const orbit = new Orbit(planetData.orbit, GM);
 
             // Create the body
             const body = new CelestialBody(
@@ -225,8 +180,7 @@ export class SolarSystem {
                 planetData.radius,
                 planetData.color,
                 orbit,
-                planetData.spritePath,
-                use3D
+                planetData.spritePath
             );
 
             bodies.push(body);

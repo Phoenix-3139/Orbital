@@ -1,0 +1,70 @@
+flowchart TD
+    Start([CoordinateSystem.js]) --> Constructor[Constructor canvasWidth, canvasHeight]
+    
+    Constructor --> InitVars[Initialize:<br/>• canvasWidth, canvasHeight<br/>• cameraCenter: 0, 0<br/>• metersPerPixel: 1e9<br/>• cameraMode: SOLAR_SYSTEM<br/>• targetPlanet: null<br/>• smoothTransitions: false<br/>• transitionSpeed: 0.1]
+    
+    InitVars --> DefineScales[Define scales:<br/>SOLAR_SYSTEM: 1.1e10<br/>INNER_PLANETS: 1e9<br/>PLANET: 5e5]
+    
+    DefineScales --> DefineMultipliers[Define planetSizeMultipliers:<br/>Each mode has:<br/>• sunMultiplier<br/>• planetMultiplier<br/>• minPixelSize]
+    
+    DefineMultipliers --> Methods{Class Methods}
+    
+    Methods --> WorldToScreen[worldToScreen worldX, worldY]
+    WorldToScreen --> WTSCalc[offsetX = worldX - cameraX / metersPerPixel<br/>offsetY = worldY - cameraY / metersPerPixel<br/>screenX = offsetX + width/2<br/>screenY = offsetY + height/2<br/>Return x, y]
+    
+    Methods --> GetMultipliers[getPlanetSizeMultipliers]
+    GetMultipliers --> GMReturn[Return multipliers<br/>for current cameraMode]
+    
+    Methods --> SetModeNum[setCameraModeByNumber modeNumber, targetPlanet]
+    SetModeNum --> MapMode[Map number to string:<br/>1 → SOLAR_SYSTEM<br/>2 → INNER_PLANETS<br/>3 → PLANET]
+    MapMode --> CallSetMode[Call setCameraMode]
+    
+    Methods --> SetMode[setCameraMode mode, targetPlanet]
+    SetMode --> ValidateMode{Valid mode?}
+    ValidateMode -->|No| DefaultMode[Use SOLAR_SYSTEM<br/>Log warning]
+    ValidateMode -->|Yes| UpdateMode[Update cameraMode<br/>and targetPlanet]
+    
+    DefaultMode --> SetScale
+    UpdateMode --> SetScale[Set metersPerPixel<br/>from scales map]
+    
+    SetScale --> ChooseCenter{Which mode?}
+    ChooseCenter -->|SOLAR_SYSTEM or<br/>INNER_PLANETS| CenterOrigin[cameraCenter = 0, 0]
+    ChooseCenter -->|PLANET| HasTarget{targetPlanet<br/>exists?}
+    
+    HasTarget -->|Yes| CenterPlanet[cameraCenter =<br/>planet position]
+    HasTarget -->|No| Fallback[cameraCenter =<br/>1 AU, 0]
+    
+    CenterOrigin --> CheckSmooth
+    CenterPlanet --> CheckSmooth
+    Fallback --> CheckSmooth{smoothTransitions?}
+    
+    CheckSmooth -->|No| ApplyNow[Call updateCamera]
+    CheckSmooth -->|Yes| ApplyLater[Skip update]
+    
+    Methods --> UpdateCam[updateCamera]
+    UpdateCam --> PlanetMode{Mode PLANET AND<br/>target exists?}
+    PlanetMode -->|No| UpdateDone
+    PlanetMode -->|Yes| SmoothEnabled{smoothTransitions?}
+    
+    SmoothEnabled -->|Yes| Interpolate[Calculate dx, dy<br/>cameraCenter.x += dx × 0.1<br/>cameraCenter.y += dy × 0.1]
+    SmoothEnabled -->|No| Snap[cameraCenter =<br/>targetPlanet.position]
+    
+    Interpolate --> UpdateDone[Camera updated]
+    Snap --> UpdateDone
+    
+    Methods --> SetCamPos[setCameraPosition x, y]
+    SetCamPos --> ManualSet[Manually set<br/>cameraCenter.x = x<br/>cameraCenter.y = y]
+    
+    Methods --> SetScaleMethod[setScale scale]
+    SetScaleMethod --> GetLimits[Get limits for mode:<br/>SOLAR: 1e9 - 1e11<br/>INNER: 5e8 - 5e9<br/>PLANET: 1e5 - 1e8]
+    GetLimits --> ClampScale[Clamp to limits:<br/>metersPerPixel =<br/>max min, min max, scale]
+    
+    Methods --> Zoom[zoom factor]
+    Zoom --> CalcZoom[newScale =<br/>metersPerPixel / factor]
+    CalcZoom --> CallSetScale[Call setScale newScale]
+    
+    style Start fill:#e1f5e1
+    style Methods fill:#e1f0ff
+    style WTSCalc fill:#fff4e1
+    style Interpolate fill:#f0e1ff
+    style ClampScale fill:#ffe1e1

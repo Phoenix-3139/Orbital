@@ -28,5 +28,3 @@ export class PlanetCycleButton extends Component {
         this.drawerComponent.targetPlanet = this.planets[this.currentIndex];
     }
 }
-
-export default PlanetCycleButton;
