@@ -148,9 +148,10 @@ export class DistanceGraph extends Component {
 
         // show the latest distance at the top area
         const last = this.distanceHistory[this.distanceHistory.length - 1];
-        const currentDistText = `Dist: ${last.toFixed(2)} AU`;
+        const currentDistText = `Dist from Sun to ${this.drawerComponent.targetPlanet}: ${last.toFixed(2)} AU`;
         this.drawText(currentDistText, this.canvas.width / 2, TOP_PAD - 8, '14px Arial', this.graphColor);
     }
+
 
     // scaleValue maps a data value in [min..max] to pixel Y in [yTop..yBottom]
     scaleValue(value, min, max, yTop = 10, yBottom = null) {

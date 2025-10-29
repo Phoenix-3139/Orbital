@@ -20,7 +20,7 @@ export class Drawer extends Component {
         useRealScale: Property.bool(true),
         planetScaleBoost: Property.float(3.0),
         cameraMode: Property.int(1),
-        targetPlanet: Property.string('Earth'),
+        targetPlanet: Property.string('Mercury'),
         minPlanetPixels: Property.float(4.0),
     };
 
