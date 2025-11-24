@@ -138,7 +138,7 @@ export class CameraController {
         }
 
         // Update camera position if following a planet in planet mode
-        if (cameraMode === 3 && targetPlanet) {
+        if ((cameraMode === 3 || cameraMode === 2) && targetPlanet) {
             
             let target = null;
             const tpLower = String(targetPlanet).toLowerCase();

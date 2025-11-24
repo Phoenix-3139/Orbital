@@ -22,7 +22,7 @@ export class PlanetCycleButton extends Component {
 
     onDown() {
         if (!this.drawerComponent) { return; }
-        if (Number(this.drawerComponent.cameraMode) !== 3) { return; }
+        if (Number(this.drawerComponent.cameraMode) !== 3 && Number(this.drawerComponent.cameraMode) !== 2) { return; }
         if (!this.planets || this.planets.length === 0) { return; }
         this.currentIndex = (this.currentIndex + 1) % this.planets.length;
         this.drawerComponent.targetPlanet = this.planets[this.currentIndex];
