@@ -192,7 +192,8 @@ export class Renderer {
 
         if (targetPlanet) {
             // Kid-friendly one-line facts
-            const facts = {
+            const facts = 
+            {
                 'Sun': {line: 'A huge, hot star that lights our solar system.', size: 'Huge'},
                 'Mercury': {line: 'Tiny and speedy, very close to the Sun.', size: 'Tiny'},
                 'Venus': {line: 'Cloudy and bright with a very hot surface.', size: 'Small'},
@@ -204,7 +205,7 @@ export class Renderer {
                 'Uranus': {line: 'A tilted, icy world that looks blue-green.', size: 'Large'},
                 'Neptune': {line: 'A windy, distant blue planet.', size: 'Large'}
             };
-            const info = facts[targetPlanet] || {line: 'A mysterious world to discover!', size: 'Unknown'};
+            const info = facts[targetPlanet.toLowerCase()] || {line: 'A mysterious world to discover!', size: 'Unknown'};
 
             // Title
             this.ctx.fillStyle = '#ffeb3b';
