@@ -230,6 +230,49 @@ export class Renderer {
         }
     }
 }
+// renderer
+drawKeplerEllipse(planetData) {
+    const ctx = this.ctx;
+    const a = planetData.orbit.semiMajorAxis;       // meters
+    const e = planetData.orbit.eccentricity;
+    const b = a * Math.sqrt(1 - e*e);
+
+    const scale = 1e9;  // convert meters → pixels
+    const rx = a/scale;
+    const ry = b/scale;
+
+    const cx = this.canvas.width/2;
+    const cy = this.canvas.height/2;
+
+    ctx.save();
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 2;
+
+    // draw ellipse
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+    ctx.stroke();
+
+    // shaded 60° slice
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI/3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, Math.PI + Math.PI/3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "16px Arial";
+    ctx.fillText("Equal areas in equal times", 20, 25);
+
+    ctx.restore();
+}
 
 function colorToRgba(color, alpha) {
     if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
