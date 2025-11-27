@@ -229,6 +229,102 @@ export class Renderer {
             this.ctx.fillText(`Current view: ${cameraMode}`, x, y);
         }
     }
+
+    drawKeplerEllipse(planetData) {
+        if (!planetData || !planetData.orbit) {
+            console.warn('Invalid planet data for Kepler ellipse');
+            return;
+        }
+
+        const ctx = this.ctx;
+        const orbit = planetData.orbit;
+        
+        // Get orbital parameters
+        const a = orbit.semiMajorAxis; // semi-major axis in meters
+        const e = orbit.eccentricity;
+        const b = a * Math.sqrt(1 - e * e); // semi-minor axis
+        
+        // Convert to screen coordinates
+        const aPixels = a / this.coordSystem.metersPerPixel;
+        const bPixels = b / this.coordSystem.metersPerPixel;
+        
+        // Calculate focus offset (distance from center to Sun)
+        const c = a * e; // linear eccentricity
+        const focusOffset = c / this.coordSystem.metersPerPixel;
+        
+        // Get Sun position in screen coordinates
+        const sunPos = this.coordSystem.worldToScreen(0, 0);
+        
+        // Get all three orbital angles (in radians)
+        const omega = orbit.argumentOfPeriapsis || 0;           // argument of periapsis
+        const Omega = orbit.longitudeOfAscendingNode || 0;      // longitude of ascending node
+        const i = orbit.inclination || 0;                       // inclination
+        
+        // Calculate the combined rotation angle for 2D projection
+        const rotation = omega + Omega;
+        
+        // Apply inclination scaling to semi-minor axis (foreshortening effect)
+        const inclinationScale = Math.cos(i);
+        const bPixelsProjected = bPixels * inclinationScale;
+        
+        // Calculate ellipse center position
+        // The Sun is at one focus, so center is offset by focusOffset along the major axis
+        const centerX = sunPos.x - focusOffset * Math.cos(rotation);
+        const centerY = sunPos.y - focusOffset * Math.sin(rotation);
+        
+        ctx.save();
+        
+        // Draw ellipse with proper rotation and inclination scaling
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, aPixels, bPixelsProjected, rotation, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Draw shaded 60° sectors (Kepler's Second Law visualization)
+        ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+        
+        // First sector (0° to 60° from periapsis)
+        ctx.beginPath();
+        ctx.moveTo(sunPos.x, sunPos.y);
+        ctx.ellipse(centerX, centerY, aPixels, bPixelsProjected, rotation, 0, Math.PI / 3);
+        ctx.lineTo(sunPos.x, sunPos.y);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Second sector (180° to 240° from periapsis - opposite side)
+        ctx.beginPath();
+        ctx.moveTo(sunPos.x, sunPos.y);
+        ctx.ellipse(centerX, centerY, aPixels, bPixelsProjected, rotation, Math.PI, Math.PI + Math.PI / 3);
+        ctx.lineTo(sunPos.x, sunPos.y);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Draw perihelion marker (closest point to Sun)
+        const periX = sunPos.x - (a - c) / this.coordSystem.metersPerPixel * Math.cos(rotation);
+        const periY = sunPos.y - (a - c) / this.coordSystem.metersPerPixel * Math.sin(rotation);
+        ctx.fillStyle = "#ff6b6b";
+        ctx.beginPath();
+        ctx.arc(periX, periY, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw aphelion marker (farthest point from Sun)
+        const aphX = sunPos.x + (a + c) / this.coordSystem.metersPerPixel * Math.cos(rotation);
+        const aphY = sunPos.y + (a + c) / this.coordSystem.metersPerPixel * Math.sin(rotation);
+        ctx.fillStyle = "#4ecdc4";
+        ctx.beginPath();
+        ctx.arc(aphX, aphY, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw label
+        ctx.fillStyle = "#fff";
+        ctx.font = "16px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText("Kepler's 2nd Law: Equal areas in equal times", 5, 125);
+        ctx.fillText(`Eccentricity: ${e.toFixed(3)} Inclination: ${(i * 180 / Math.PI).toFixed(1)}°`, 5, 145);
+        
+        ctx.restore();
+    }
 }
 
 function colorToRgba(color, alpha) {

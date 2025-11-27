@@ -13,7 +13,7 @@ export class Drawer extends Component {
         bgColor: Property.string('#0a0a0a'),
         paused: Property.bool(false),
         timeMultiplier: Property.float(2000000),
-        showOrbits: Property.bool(true),
+        showOrbits: Property.bool(false),
         // maxTrailLength: Property.int(4000), // REMOVED: trail length is now dynamic
         enablePerturbations: Property.bool(false),
         showOuterPlanets: Property.bool(true),
@@ -21,6 +21,8 @@ export class Drawer extends Component {
         planetScaleBoost: Property.float(3.0),
         cameraMode: Property.int(1),
         targetPlanet: Property.string('Mercury'),
+        drawKeplerEllipse: Property.bool(true),
+        targetPlanetIndex: Property.int(2),
         minPlanetPixels: Property.float(4.0),
     };
 
@@ -136,7 +138,12 @@ export class Drawer extends Component {
                 this.simulationController.simulationTime, this.targetPlanet,
                 this.useRealScale, this.planetScaleBoost
             );
-            
+
+            if(this.cameraMode === 2 && this.drawKeplerEllipse)
+            {
+            this.renderer.drawKeplerEllipse(this.simulationController.bodies[this.targetPlanetIndex]);
+            }
+                        
             // Update texture
             this.canvasManager.updateTexture();
             
