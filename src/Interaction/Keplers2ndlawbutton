@@ -1,0 +1,20 @@
+// button
+import {Component, Type} from '@wonderlandengine/api';
+
+export class PlanetGraphButton extends Component {
+    static TypeName = "planet-graph-button";
+    static Properties = {
+        drawerObj: { type: Type.Object },
+        planetName: { type: Type.String }
+    };
+
+    start() {
+        const drawer = this.drawerObj.getComponent("orbital-simulation");
+        const cursor = this.object.getComponent("cursor-target");
+
+        cursor.onDown.add(() => {
+            drawer.graphPlanetData = Body.planetData[this.planetName];
+        });
+    }
+}
+
