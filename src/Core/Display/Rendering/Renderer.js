@@ -8,7 +8,7 @@ export class Renderer {
         this.canvas = canvasManager.canvas;
         this.ctx = canvasManager.ctx;
         this.coordSystem = coordSystem;
-        this.spriteCache = {};
+        this.spriteCache = {}; //Caching the planet sprites for efficiency
 
         //Set image smoothing false for better quality
         this.ctx.imageSmoothingEnabled = false;
@@ -52,18 +52,19 @@ export class Renderer {
 
     drawPlanetSprite(body, screenPos, radius) 
     {
-        const key = body.spritePath;
+        const key = body.spritePath; //path to the sprite
         
-        if (this.spriteCache[key]) {
-            this.ctx.drawImage(this.spriteCache[key], screenPos.x - radius, screenPos.y - radius, radius * 2, radius * 2);
+        if (this.spriteCache[key]) //if the sprite is cached
+        {
+            this.ctx.drawImage(this.spriteCache[key], screenPos.x - radius, screenPos.y - radius, radius * 2, radius * 2); // draws the sprite
             return;
         }
 
-        const img = new Image();
-        img.onload = () => {
-            this.spriteCache[key] = img;
+        const img = new Image(); //create a new image
+        img.onload = () => { //when the image is loaded, draw it
+            this.spriteCache[key] = img; //cache the image
         };
-        img.src = key;
+        img.src = key; // sets the source of the image
     }
 
     drawBarycenterMarker(screenPos) {
@@ -194,16 +195,16 @@ export class Renderer {
             // Kid-friendly one-line facts
             const facts = 
             {
-                'Sun': {line: 'A huge, hot star that lights our solar system.', size: 'Huge'},
-                'Mercury': {line: 'Tiny and speedy, very close to the Sun.', size: 'Tiny'},
-                'Venus': {line: 'Cloudy and bright with a very hot surface.', size: 'Small'},
-                'Earth': {line: 'Our home — the only planet known with life.', size: 'Medium'},
-                'Moon': {line: 'Earth’s companion that lights the night.', size: 'Tiny'},
-                'Mars': {line: 'The red planet with big volcanoes and valleys.', size: 'Small'},
-                'Jupiter': {line: 'A giant gas planet with a huge storm.', size: 'Huge'},
-                'Saturn': {line: 'Famous for its beautiful rings.', size: 'Huge'},
-                'Uranus': {line: 'A tilted, icy world that looks blue-green.', size: 'Large'},
-                'Neptune': {line: 'A windy, distant blue planet.', size: 'Large'}
+                'sun': {line: 'A huge, hot star that lights our solar system.', size: 'Huge'},
+                'mercury': {line: 'Tiny and speedy, very close to the Sun.', size: 'Tiny'},
+                'venus': {line: 'Cloudy and bright with a very hot surface.', size: 'Small'},
+                'earth': {line: 'Our home — the only planet known with life.', size: 'Medium'},
+                'moon': {line: 'Earth’s companion that lights the night.', size: 'Tiny'},
+                'mars': {line: 'The red planet with big volcanoes and valleys.', size: 'Small'},
+                'jupiter': {line: 'A giant gas planet with a huge storm.', size: 'Huge'},
+                'saturn': {line: 'Famous for its beautiful rings.', size: 'Huge'},
+                'uranus': {line: 'A tilted, icy world that looks blue-green.', size: 'Large'},
+                'neptune': {line: 'A windy, distant blue planet.', size: 'Large'}
             };
             const info = facts[targetPlanet.toLowerCase()] || {line: 'A mysterious world to discover!', size: 'Unknown'};
 
