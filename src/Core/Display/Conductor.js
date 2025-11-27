@@ -115,9 +115,10 @@ export class Drawer extends Component {
             );
             
             // Draw trails
-            if (this.showOrbits) {
+            if (this.showOrbits) 
+            {
                 for (let i = 0; i < visibleBodies.length; i++) {
-                    this.renderer.drawTrail(visibleBodies[i]);
+                    this.renderer.drawTrail(visibleBodies[i], this.showOrbits);
                 }
             }
             

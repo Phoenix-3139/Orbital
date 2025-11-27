@@ -113,7 +113,10 @@ export class Renderer {
 
     //MARK: TRAIL RENDERING
 
-    drawTrail(body) {
+    drawTrail(body, flag) 
+    {
+        if(flag)
+        {
         // Do not render trails for the Moon / satellites
         if (!body || body.name === 'Moon' || String(body.satellite) === 'true') return;
 
@@ -140,6 +143,7 @@ export class Renderer {
         }
 
         this.ctx.stroke();
+    }
     }
 
     //MARK: GRID RENDERING
