@@ -40,7 +40,7 @@ export class UniversalCoordinateSystem {
         
         this.metersPerPixel = this.scales[this.cameraMode];
         this.smoothTransitions = false;
-        this.transitionSpeed = 0.1;
+        this.transitionSpeed = 0.1; //Used to smooth camera transitions, but it is disabled by default
     }
 
     /**

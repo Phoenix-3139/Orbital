@@ -58,7 +58,7 @@ export class Orbit {
         return { x, y, distance, trueAnomaly, eccentricAnomaly, meanAnomaly };
     }
 
-    // Solve Kepler's equation using iteration (IMPROVED)
+    // Solve Kepler's equation using iteration
     solveKeplersEquation(meanAnomaly) {
         // Normalize mean anomaly to [-π, π] for better convergence
         let M = ((meanAnomaly + Math.PI) % (2 * Math.PI)) - Math.PI;

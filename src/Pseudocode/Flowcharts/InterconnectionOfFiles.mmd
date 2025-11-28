@@ -1,0 +1,44 @@
+graph TD
+    subgraph "UI / Interaction"
+        A["CameraModeNextButton.js"]
+        B["PauseToggleButton.js"]
+        C["PlanetCycleButton.js"]
+        D["ToggleOrbitsButton.js"]
+        E["Kepler2ndEQ-Toggle.js"]
+        F["DistGraph.js"]
+    end
+
+    subgraph "Core Engine"
+        G["Conductor.js (Drawer)"]
+        H["SimulationController.js"]
+        I["CameraController.js"]
+        J["Renderer.js"]
+    end
+
+    subgraph "Core Subsystems"
+        K["CoordinateSystem.js"]
+        L["CanvasManager.js"]
+        M["KeplerianOrbit.js"]
+        N["body.js (Data)"]
+    end
+
+    A -->|Modifies| G
+    B -->|Modifies| G
+    C -->|Modifies| G
+    D -->|Modifies| G
+    E -->|Modifies| G
+    F -->|Reads from| G
+
+    G -->|Uses| H
+    G -->|Uses| I
+    G -->|Uses| J
+    G -->|Uses| L
+
+    J -->|Uses| K
+    J -->|Uses| L
+    I -->|Uses| K
+
+    H -->|Uses| M
+    H -->|Uses| N
+    M -->|Uses| N
+    F -->|Uses| N

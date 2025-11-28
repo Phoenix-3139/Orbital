@@ -88,8 +88,6 @@ export class Drawer extends Component {
             return;
         }
 
-        
-
         try {
             // Update simulation with deltaTime
             this.simulationController.updateSimulation(dt);
