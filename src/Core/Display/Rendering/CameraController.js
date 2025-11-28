@@ -1,18 +1,16 @@
 import { UniversalCoordinateSystem } from '../CoordinateSystem.js';
 
-/**
- * Camera Controller
- * Manages camera modes, scaling, and coordinate system interactions
- * Supports modes 1-3: Solar System, Inner Planets, Planet Focus
+/*
+Camera Controller
+Manages camera modes, scaling, and coordinate system interactions
+Supports modes 1-3: Solar System, Inner Planets, Planet Focus
  */
 export class CameraController {
     constructor(canvasWidth, canvasHeight) {
         this.coordSystem = new UniversalCoordinateSystem(canvasWidth, canvasHeight);
     }
 
-    /**
-     * Initialize camera system (from original _initState method)
-     */
+    //Initialize camera system (from original _initState method)
     initCamera(cameraMode, targetPlanet, bodies, enableCameraSmoothing, planetScaleBoost, 
                overridePlanetScaling, manualSunMultiplier, manualPlanetMultiplier, 
                minPlanetPixels, manualZoom) {
@@ -61,9 +59,7 @@ export class CameraController {
         console.log(`Planet Scale Boost: ${planetScaleBoost}x`);
     }
 
-    /**
-     * Apply Enhanced Planet Scaling for Mode 3 (from original method)
-     */
+    // Apply Enhanced Planet Scaling for Mode 3 (from original method)
     _applyEnhancedPlanetScaling(cameraMode, planetScaleBoost, minPlanetPixels) {
         const currentMode = this.coordSystem.cameraMode;
         
@@ -84,9 +80,7 @@ export class CameraController {
         console.log(`  Planet Multiplier: ${this.coordSystem.planetSizeMultipliers[currentMode].planetMultiplier}x`);
     }
 
-    /**
-     * Apply Manual Scaling Overrides (from original method)
-     */
+    // Apply Manual Scaling Overrides
     _applyManualScaling(manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels) {
         const currentMode = this.coordSystem.cameraMode;
         
@@ -99,9 +93,7 @@ export class CameraController {
         console.log(`Manual scaling applied - Sun: ${manualSunMultiplier}x, Planets: ${manualPlanetMultiplier}x`);
     }
 
-    /**
-     * Update Camera System
-     */
+    // Update Camera based on editor properties
     updateCamera(cameraMode, targetPlanet, bodies, planetScaleBoost, overridePlanetScaling, manualSunMultiplier, manualPlanetMultiplier, minPlanetPixels, manualZoom) {
         // Check if camera mode changed in editor during runtime
         if (this.coordSystem.cameraMode !== this._getCurrentModeString(cameraMode)) {
@@ -162,10 +154,7 @@ export class CameraController {
             this._configurePlanetFocusView(targetPlanet, bodies, planetScaleBoost, manualZoom);
         }
     }
-
-    /**
-     * Get Current Camera Mode as String
-     */
+    // Helper to get mode string from number
     _getCurrentModeString(cameraMode) {
         const modes = {
             1: 'SOLAR_SYSTEM',
@@ -175,9 +164,7 @@ export class CameraController {
         return modes[cameraMode];
     }
 
-    /**
-     * Adaptive planet focus for mode 3.
-     */
+    // Configure adaptive Planet Focus View for Mode 3
     _configurePlanetFocusView(targetPlanetName, bodies, planetScaleBoost, manualZoom) {
         
         let planet = null;

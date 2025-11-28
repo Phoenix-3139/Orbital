@@ -15,7 +15,6 @@ export class Drawer extends Component {
         timeMultiplier: Property.float(2000000),
         showOrbits: Property.bool(false),
         // maxTrailLength: Property.int(4000), // REMOVED: trail length is now dynamic
-        enablePerturbations: Property.bool(false),
         showOuterPlanets: Property.bool(true),
         useRealScale: Property.bool(true),
         planetScaleBoost: Property.float(3.0),
@@ -133,8 +132,7 @@ export class Drawer extends Component {
             // Draw UI
             this.renderer.drawUI(
                 this.cameraMode, this.timeMultiplier,
-                this.simulationController.simulationTime, this.targetPlanet,
-                this.useRealScale, this.planetScaleBoost
+                this.simulationController.simulationTime, this.targetPlanet
             );
 
             if(this.cameraMode === 2 && this.drawKeplerEllipse)
@@ -150,26 +148,20 @@ export class Drawer extends Component {
         }
     }
 
-    /**
-     * Clean up on destroy
-     */
+    // Cleanup on destroy
     onDestroy() {
         console.log('Cleaning up Orbital Simulation...');
         this.initialized = false;
     }
 
-    /**
-     * Set camera mode (1, 2, 3 only)
-     */
+    // Set camera mode
     setCameraMode(mode) {
         const previousMode = this.cameraMode;
         this.cameraMode = Math.max(1, Math.min(3, mode)); // Clamp between 1-3
         console.log(`Camera mode changed from ${previousMode} to ${this.cameraMode}`);
     }
 
-    /**
-     * Set target planet
-     */
+    // Set target planet by name
     setTargetPlanet(planetName) {
         const previousPlanet = this.targetPlanet;
         this.targetPlanet = planetName;

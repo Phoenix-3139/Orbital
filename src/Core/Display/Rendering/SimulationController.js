@@ -1,11 +1,11 @@
 import { SolarSystem } from '../../Physics/KeplerianOrbit.js';
 import { Body } from '../../Data/body.js';
 
-/**
- * SimulationController
- * - Creates bodies from SolarSystem factory
- * - Keeps simulation time
- * - Updates positions and trails each tick
+/*
+SimulationController
+Creates bodies from SolarSystem factory
+Keeps simulation time
+Updates positions and trails each tick
  */
 export class SimulationController {
     constructor(timeMultiplier = 2000000, maxTrailPoints = 2000) {

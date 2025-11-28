@@ -1,10 +1,9 @@
 import { Component, Property } from '@wonderlandengine/api';
 
-/**
- * SIMPLE PLANE DRAWING TEMPLATE
- * 
- * This makes a drawing on a flat surface (like a TV screen or poster).
- * You can draw anything you want - just change the "drawContent" section below!
+/*
+SIMPLE PLANE DRAWING TEMPLATE
+This makes a drawing on a flat surface (like a TV screen or poster).
+ You can draw anything you want - just change the "drawContent" section below!
  */
 export class PlaneDrawingTemplate extends Component {
     static TypeName = 'plane-drawing-template';
@@ -70,8 +69,8 @@ export class PlaneDrawingTemplate extends Component {
         this.brush.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    /**
-     * ===== CHANGE THIS PART TO DRAW WHAT YOU WANT! =====
+    /*
+    CHANGE THIS PART TO DRAW WHAT YOU WANT!
      */
     drawContent() {
         // Start fresh

@@ -1,8 +1,5 @@
 import {Component, Property} from '@wonderlandengine/api';
 
-/**
- * Kepler2ndEQ-Toggle
- */
 export class Kepler2ndEQToggle extends Component {
     static TypeName = 'Kepler2ndEQ-Toggle';
     /* Properties that are configurable in the editor */

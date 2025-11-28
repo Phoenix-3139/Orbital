@@ -1,7 +1,7 @@
-/**
- * ORBITAL MECHANICS
- * This file calculates where planets are at any given time.
- * It uses Kepler's laws (elliptical orbits).
+/*
+ORBITAL MECHANICS
+This file calculates where planets are at any given time.
+It uses Kepler's laws (elliptical orbits).
  */
 
 import { Body } from '../Data/body.js';

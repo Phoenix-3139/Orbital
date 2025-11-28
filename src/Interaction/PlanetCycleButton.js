@@ -30,7 +30,7 @@ export class PlanetCycleButton extends Component {
         
         this.currentIndex = (this.currentIndex + 1) % this.planets.length;
         this.drawerComponent.targetPlanet = this.planets[this.currentIndex];
-        console.log("Target Planet set to: " + this.currentIndex);
+        console.log("Target Planet set to: " + this.currentIndex + " - " + this.drawerComponent.targetPlanet);
 
         if (this.tpIndex == 3) 
         {
