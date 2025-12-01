@@ -289,7 +289,8 @@ export class Renderer {
         ctx.fill();
         ctx.fillStyle = "#fff";
         ctx.font = "16px Arial";
-        ctx.fillText("Equal areas in equal times", 20, 125);
+        ctx.fillText("This is a representation of Kepler's 2nd Law:", 10, 125);
+        ctx.fillText("Equal areas in equal times.", 10, 140);
 
         ctx.restore();
 
