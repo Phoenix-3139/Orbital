@@ -194,13 +194,13 @@ export class CameraController {
 }
 
 const planetScales = {
-    mercury: 1e7,
-    venus: 1e7,
-    earth: 1e7,
-    mars: 1e7,
-    jupiter: 1e7,   
-    saturn: 1e7,    
-    uranus: 1e7,    
-    neptune: 1e7,   
+    mercury: 5e7,
+    venus: 5e7,
+    earth: 5e7,
+    mars: 5e7,
+    jupiter: 5e7,   
+    saturn: 5e7,    
+    uranus: 5e7,    
+    neptune: 5e7,   
     
 };

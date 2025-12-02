@@ -17,12 +17,14 @@ export class Drawer extends Component {
         // maxTrailLength: Property.int(4000), // REMOVED: trail length is now dynamic
         showOuterPlanets: Property.bool(true),
         useRealScale: Property.bool(true),
-        planetScaleBoost: Property.float(3.0),
+        //Increase for resolution
+        planetScaleBoost: Property.float(6.0),
         cameraMode: Property.int(1),
         targetPlanet: Property.string('Mercury'),
         drawKeplerEllipse: Property.bool(true),
         targetPlanetIndex: Property.int(2),
-        minPlanetPixels: Property.float(4.0),
+        //Increase for resolution
+        minPlanetPixels: Property.float(6.0),
     };
 
     start() {
@@ -37,7 +39,8 @@ export class Drawer extends Component {
             var canvasInitOk = false;
             try {
                 if (typeof this.canvasManager.initialize === 'function') {
-                    canvasInitOk = this.canvasManager.initialize();
+                    //Set canvas size parameters
+                    canvasInitOk = this.canvasManager.initialize(1024, 1024);
                 } else {
                     // If initialize isn't present, assume canvasManager created the canvas already
                     canvasInitOk = true;
@@ -132,7 +135,7 @@ export class Drawer extends Component {
             // Draw UI
             this.renderer.drawUI(
                 this.cameraMode, this.timeMultiplier,
-                this.simulationController.simulationTime, this.targetPlanet
+                this.simulationController.simulationTime, this.targetPlanet, 2
             );
 
             if(this.cameraMode === 2 && this.drawKeplerEllipse && (this.targetPlanet == "Venus" || this.targetPlanet =="Earth"))

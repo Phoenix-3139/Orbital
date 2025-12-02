@@ -23,18 +23,13 @@ export class Renderer {
     //MARK: PLANET RENDERING
 
     drawPlanet(body, cameraMode, useRealScale, minSize, scaleBoost) {
+
         if (body.isBarycenter && cameraMode !== 3) {
             return;
         }
 
         const screenPos = this.coordSystem.worldToScreen(body.position.x, body.position.y);
         
-        if (body.isBarycenter) {
-            this.drawBarycenterMarker(screenPos);
-            console.log("Drawing barycenter for:", body.name);
-            return;
-        }
-
         const radius = this.calculateRadius(body, cameraMode, useRealScale, minSize, scaleBoost);
 
         if (body.spritePath && body.isBarycenter !== true) {
@@ -68,14 +63,6 @@ export class Renderer {
         };
         img.src = key; // sets the source of the image
     }
-    }
-
-    drawBarycenterMarker(screenPos) {
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        this.ctx.beginPath();
-        this.ctx.arc(screenPos.x, screenPos.y, 2, 0, Math.PI * 2); // small circle for barycenter
-        this.ctx.fill();
-        console.log("Drawing barycenter marker at:", screenPos);
     }
 
     calculateRadius(body, cameraMode, useRealScale, minSize, scaleBoost) {
@@ -258,10 +245,8 @@ export class Renderer {
         const e = planetData.orbit.eccentricity;
         const b = a * Math.sqrt(1 - e*e);
 
-        const scale = 1e9;  // convert meters → pixels
-        const rx = a/scale;
-        const ry = b/scale;
-
+        const rx = a / this.coordSystem.metersPerPixel;
+        const ry = b / this.coordSystem.metersPerPixel;
 
         const cx = this.canvas.width/2;
         const cy = this.canvas.height/2;
@@ -287,14 +272,16 @@ export class Renderer {
         ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, Math.PI + Math.PI/3);
         ctx.closePath();
         ctx.fill();
+        
+        // CHANGE: Scale text size based on canvas resolution
+        const fontSize = Math.round(24 * (this.canvas.width / 1024));
         ctx.fillStyle = "#fff";
-        ctx.font = "16px Arial";
-        ctx.fillText("This is a representation of Kepler's 2nd Law:", 10, 125);
-        ctx.fillText("Equal areas in equal times.", 10, 140);
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillText("This is a representation of Kepler's 2nd Law:", 525, 125 * (this.canvas.width / 1024));
+        ctx.fillText("Equal areas in equal times.", 525, 160 * (this.canvas.width / 1024));
 
         ctx.restore();
-
-}
+    }
 }
 
 function colorToRgba(color, alpha) {

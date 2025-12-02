@@ -19,10 +19,11 @@ export class WobbleOnBarycenter extends Component {
         // maxTrailLength: Property.int(4000), // REMOVED: trail length is now dynamic
         showOuterPlanets: Property.bool(true),
         useRealScale: Property.bool(true),
-        planetScaleBoost: Property.float(0.1),
+        //increase for resolution
+        planetScaleBoost: Property.float(1.1),
 
-
-        minPlanetPixels: Property.float(4.0),
+        //Increase for resolution
+        minPlanetPixels: Property.float(36.0),
     };
 
         cameraMode = 3;
@@ -41,7 +42,7 @@ export class WobbleOnBarycenter extends Component {
                 var canvasInitOk = false;
                 try {
                     if (typeof this.canvasManager.initialize === 'function') {
-                        canvasInitOk = this.canvasManager.initialize(256, 256);
+                        canvasInitOk = this.canvasManager.initialize(2048, 2048);
                     } else {
                         // If initialize isn't present, assume canvasManager created the canvas already
                         canvasInitOk = true;
@@ -137,7 +138,7 @@ export class WobbleOnBarycenter extends Component {
             // Draw UI
             this.renderer.drawUI(
                 this.cameraMode, this.timeMultiplier,
-                this.simulationController.simulationTime, this.targetName, 0.6
+                this.simulationController.simulationTime, this.targetName, 5
             );
             
 

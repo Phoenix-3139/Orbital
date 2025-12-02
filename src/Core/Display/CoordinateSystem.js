@@ -14,9 +14,9 @@ export class UniversalCoordinateSystem {
         
         // Fixed scale levels for each mode
         this.scales = {
-            SOLAR_SYSTEM: 1.1e10,    // 11 million km per pixel
-            INNER_PLANETS: 1e9,      // 1 million km per pixel  
-            PLANET: 5e5              // 10,000 km per pixel
+            SOLAR_SYSTEM: 1e10,     // decrease to zoom
+            INNER_PLANETS: 5e8,     
+            PLANET: 1e7
         };
         
         // Planet size multipliers for visibility

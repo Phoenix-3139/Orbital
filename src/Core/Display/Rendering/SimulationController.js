@@ -118,8 +118,6 @@ export class SimulationController {
         this.timeMultiplier = Math.max(1, mult);
     }
 
-    // Ensure this method exists so Conductor can call it.
-    // Simple, safe implementation: return all bodies. Customize filtering later.
     getVisibleBodies(cameraMode, showOuterPlanets, coordSystem) {
         if (!Array.isArray(this.bodies)) {
             return [];

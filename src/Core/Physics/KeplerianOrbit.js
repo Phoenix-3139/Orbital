@@ -101,13 +101,14 @@ export class Orbit {
 // A planet/moon with position, velocity, trail
 
 export class CelestialBody {
-    constructor(name, mass, radius, color, orbit, spritePath = null) {
+    constructor(name, mass, radius, color, orbit, spritePath = null, isBarycenter = false) {
         this.name = name;
         this.mass = mass;
         this.radius = radius;
         this.color = color;
         this.orbit = orbit;  // Can be null for Sun
         this.spritePath = spritePath;
+        this.isBarycenter = isBarycenter;
 
         this.position = { x: 0, y: 0 };
         this.velocity = { x: 0, y: 0 };
@@ -180,7 +181,8 @@ export class SolarSystem {
                 planetData.radius,
                 planetData.color,
                 orbit,
-                planetData.spritePath
+                planetData.spritePath,
+                planetData.isBarycenter || false
             );
 
             bodies.push(body);
