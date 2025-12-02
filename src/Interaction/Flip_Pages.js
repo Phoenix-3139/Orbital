@@ -1,10 +1,10 @@
 import {Component, Property} from '@wonderlandengine/api';
 
-/**
- * FlipPages
+/*
+FlipPages
  */
 export class FlipPages extends Component {
-    static TypeName = 'FlipPages';
+    static TypeName = 'Flip_Pages';
     /* Properties that are configurable in the editor */
     static Properties = {
             drawerObject: Property.object()

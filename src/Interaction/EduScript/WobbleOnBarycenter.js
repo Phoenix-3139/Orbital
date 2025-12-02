@@ -14,7 +14,7 @@ export class WobbleOnBarycenter extends Component {
         material: Property.material(),
         bgColor: Property.string('#0a0a0a'),
         paused: Property.bool(false),
-        timeMultiplier: Property.float(10),
+        timeMultiplier: Property.float(15000.000),
         showOrbits: Property.bool(false),
         // maxTrailLength: Property.int(4000), // REMOVED: trail length is now dynamic
         showOuterPlanets: Property.bool(true),
