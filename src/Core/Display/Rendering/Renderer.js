@@ -274,11 +274,11 @@ export class Renderer {
         ctx.fill();
         
         // CHANGE: Scale text size based on canvas resolution
-        const fontSize = Math.round(24 * (this.canvas.width / 1024));
+        const fontSize = Math.round(22 * (this.canvas.width / 1024));
         ctx.fillStyle = "#fff";
         ctx.font = `${fontSize}px Arial`;
-        ctx.fillText("This is a representation of Kepler's 2nd Law:", 525, 125 * (this.canvas.width / 1024));
-        ctx.fillText("Equal areas in equal times.", 525, 160 * (this.canvas.width / 1024));
+        ctx.fillText("This is a representation of Kepler's 2nd Law:", 540, 40);
+        ctx.fillText("Equal areas in equal times.", 540, 40 + fontSize + 4);
 
         ctx.restore();
     }

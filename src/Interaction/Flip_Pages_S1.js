@@ -4,7 +4,7 @@ import {Component, Property} from '@wonderlandengine/api';
 FlipPages
  */
 export class FlipPages extends Component {
-    static TypeName = 'Flip_Pages';
+    static TypeName = 'Flip_Pages_S1';
     /* Properties that are configurable in the editor */
     static Properties = {
             drawerObject: Property.object()
