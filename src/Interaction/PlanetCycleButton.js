@@ -20,7 +20,7 @@ export class PlanetCycleButton extends Component {
         this.onDown = this.onDown.bind(this);
         this.target.onDown.add(this.onDown);
 
-        this.tpIndex = 3; // Start with 3 (EQ3)
+        this.tpIndex = 3;
     }
 
     onDown() {

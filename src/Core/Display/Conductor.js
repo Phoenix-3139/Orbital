@@ -135,7 +135,7 @@ export class Drawer extends Component {
                 this.simulationController.simulationTime, this.targetPlanet
             );
 
-            if(this.cameraMode === 2 && this.drawKeplerEllipse)
+            if(this.cameraMode === 2 && this.drawKeplerEllipse && (this.targetPlanet == "Venus" || this.targetPlanet =="Earth"))
             {
             this.renderer.drawKeplerEllipse(this.simulationController.bodies[this.targetPlanetIndex]);
             }
