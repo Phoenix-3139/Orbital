@@ -6,14 +6,15 @@ export class PlanetCycleButton extends Component {
     static TypeName = 'planet-cycle-button';
     static Properties = {
         drawerObject: Property.object(),
-        planetList: Property.string('Mercury,Venus,Earth,Mars,Jupiter,Saturn,Uranus,Neptune')
     };
 
+    
+
     start() {
+        this.planets = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
         this.target = this.object.getComponent(CursorTarget) || this.object.addComponent(CursorTarget);
         this.drawerComponent = this.drawerObject ? this.drawerObject.getComponent(Drawer) : null;
 
-        this.planets = (this.planetList || '').split(',').map(function (p) { return p.trim(); }).filter(function (p) { return p.length > 0; });
         this.currentIndex = 0;
         this.currentIndexOneTwo = 0;
 
@@ -26,7 +27,7 @@ export class PlanetCycleButton extends Component {
     onDown() {
         if (!this.drawerComponent) { return; }
         if (Number(this.drawerComponent.cameraMode) !== 3 && Number(this.drawerComponent.cameraMode) !== 2) { return; }
-        if (!this.planets || this.planets.length === 0) { return; }
+        if (!this.planets || this.planets.length == 0) { return; }
         
         this.currentIndex = (this.currentIndex + 1) % this.planets.length;
         this.drawerComponent.targetPlanet = this.planets[this.currentIndex];

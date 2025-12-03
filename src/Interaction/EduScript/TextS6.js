@@ -1,7 +1,7 @@
 import {Component, Property} from '@wonderlandengine/api';
 
-export class TextS1 extends Component {
-    static TypeName = 'Text_S1';
+export class TextS6 extends Component {
+    static TypeName = 'Text_S6';
     static Properties = {
         material: Property.material(),
         canvasWidth: Property.int(512),
@@ -19,13 +19,14 @@ export class TextS1 extends Component {
     start() {
        
         this.pages = [
-            "Page 1 - What Is Gravity?\n\nGravity is a pulling force that\nthings with a lot of mass, like\nplanets, have. It's what pulls\nobjects toward each other, even\nyou. This is super cool because it\nmeans the Earth is giving you a\ngiant, invisible hug to keep you\nclose!",
-            "Page 2 — Why Don't We Float Away?\n\nThe Earth's strong gravity\nconstantly pulls you down toward its\ncenter, which is why you always land\non the ground after you jump.\nGravity also keeps the oceans, air,\nand all people and buildings from\nfloating away into space. Isn't it\namazing that this invisible force\nholds our whole world together so\nperfectly?",
-            "Page 3 — Gravity in Space\n\nGravity is everywhere in space,\nacting as an invisible force that\nkeeps planets near the Sun. Without\nthe Sun's powerful gravity, the\nplanets would fly off in a straight\nline forever instead of staying in\ntheir paths. The Sun is like a\nsuper-giant magnet, and it has such\na strong pull that it makes all the\nplanets dance around it!",
-            "Page 4 — Gravity as an Invisible String\n\nYou can imagine that the Sun holds\nonto each planet with an invisible\nstring. This invisible \"pull\" keeps\nthe planets close to the Sun, but it\nalso lets them keep moving forward.\nThis exciting, powerful pull is what\nmakes sure our whole solar system\nstays spinning and organized!",
-            "Page 5 - The Distance Graph Explained\n\nLook at the graph on the left screen!\nIt shows how far your selected planet\nis from the Sun over time. The wavy\nline goes up and down because planets\ndon't travel in perfect circles -\nthey follow elliptical (oval-shaped)\npaths! This means sometimes they're\ncloser to the Sun, sometimes farther.",
-            "Page 6 - Reading the Wave Pattern\n\nWhen the graph line goes DOWN, the\nplanet is moving CLOSER to the Sun.\nWhen it goes UP, the planet is moving\nFARTHER from the Sun. The distance is\nmeasured in AU (Astronomical Units),\nwhere 1 AU equals the distance from\nEarth to the Sun. Watch how the wave\nrepeats - that's one complete orbit!"
+            "Page 1 - Welcome to Mission Control!\n\nYou've entered the Orbital Command\nStation! Look at the main screen -\nyou can see our entire solar system\nin motion. The side control panel\nbelow lets you interact with this\nlive simulation. Let's learn how to\nuse these powerful tools!",
+            "Page 2 - The Map Mode Button\n\nThe first green button cycles through\ndifferent camera views. Try it!\nMode 1 shows the whole solar system.\nMode 2 follows a specific planet.\nMode 3 gives you a close-up view.\nEach mode helps you see different\naspects of planetary motion!",
+            "Page 3 - Pause and Play\n\nThe second button controls time\nitself! Click it to pause the\nsimulation and study the planets'\npositions. Click again to resume.\nThis is incredibly useful when you\nwant to examine a specific moment in\nthe planets' dance around the Sun!",
+            "Page 4 - Planet Cycling\n\nThe third button lets you choose\nwhich planet to follow! Each click\nswitches to the next planet in our\nsolar system. Use this with Mode 2\nor 3 to track Mercury's speedy orbit\nor Neptune's slow, distant journey\naround the Sun!",
+            "Page 5 - Orbit Trail Toggle\n\nThe fourth button shows or hides the\norbital paths. When active, you'll\nsee colored trails behind each planet\nshowing where they've traveled. This\nreveals the beautiful elliptical\nshapes of planetary orbits that\nJohannes Kepler discovered!",  
+            "Page 6 - Your Mission Begins\n\nYou now have full control of this\nsimulation! Try different camera\nmodes, pause to study positions,\nfollow various planets, and toggle\nthe trails. Experiment freely!"
         ];
+
 
         this.currentPage = 0; // starting page
         this.setupCanvas();

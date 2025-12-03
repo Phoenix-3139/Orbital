@@ -1,7 +1,7 @@
 import {Component, Property} from '@wonderlandengine/api';
 
-export class TextS1 extends Component {
-    static TypeName = 'Text_S1';
+export class TextS3 extends Component {
+    static TypeName = 'Text_S3';
     static Properties = {
         material: Property.material(),
         canvasWidth: Property.int(512),
@@ -12,19 +12,18 @@ export class TextS1 extends Component {
         
         displayText: Property.string(''),
 
-        
         totalPages: Property.int(6)
     };
 
     start() {
        
         this.pages = [
-            "Page 1 - What Is Gravity?\n\nGravity is a pulling force that\nthings with a lot of mass, like\nplanets, have. It's what pulls\nobjects toward each other, even\nyou. This is super cool because it\nmeans the Earth is giving you a\ngiant, invisible hug to keep you\nclose!",
-            "Page 2 — Why Don't We Float Away?\n\nThe Earth's strong gravity\nconstantly pulls you down toward its\ncenter, which is why you always land\non the ground after you jump.\nGravity also keeps the oceans, air,\nand all people and buildings from\nfloating away into space. Isn't it\namazing that this invisible force\nholds our whole world together so\nperfectly?",
-            "Page 3 — Gravity in Space\n\nGravity is everywhere in space,\nacting as an invisible force that\nkeeps planets near the Sun. Without\nthe Sun's powerful gravity, the\nplanets would fly off in a straight\nline forever instead of staying in\ntheir paths. The Sun is like a\nsuper-giant magnet, and it has such\na strong pull that it makes all the\nplanets dance around it!",
-            "Page 4 — Gravity as an Invisible String\n\nYou can imagine that the Sun holds\nonto each planet with an invisible\nstring. This invisible \"pull\" keeps\nthe planets close to the Sun, but it\nalso lets them keep moving forward.\nThis exciting, powerful pull is what\nmakes sure our whole solar system\nstays spinning and organized!",
-            "Page 5 - The Distance Graph Explained\n\nLook at the graph on the left screen!\nIt shows how far your selected planet\nis from the Sun over time. The wavy\nline goes up and down because planets\ndon't travel in perfect circles -\nthey follow elliptical (oval-shaped)\npaths! This means sometimes they're\ncloser to the Sun, sometimes farther.",
-            "Page 6 - Reading the Wave Pattern\n\nWhen the graph line goes DOWN, the\nplanet is moving CLOSER to the Sun.\nWhen it goes UP, the planet is moving\nFARTHER from the Sun. The distance is\nmeasured in AU (Astronomical Units),\nwhere 1 AU equals the distance from\nEarth to the Sun. Watch how the wave\nrepeats - that's one complete orbit!"
+            "Page 1 - Kepler's Second Law\n\nJohannes Kepler discovered something\namazing about planetary motion! He\nfound that planets don't move at a\nconstant speed - they speed up and\nslow down as they orbit the Sun.\nLet's explore this fascinating\npattern called the Equal Areas Law!",
+            "Page 2 - The Speed Dance\n\nWhen a planet is closer to the Sun,\nit moves faster through space. When\nit's farther away, it slows down.\nThis isn't random - it follows a\nperfect mathematical rule! Watch the\nplanets carefully and you'll see this\nspeed change happening right now.",
+            "Page 3 - The Equal Areas Rule\n\nHere's Kepler's brilliant discovery:\nImagine drawing a line from the Sun\nto a planet. As the planet moves,\nthis line sweeps out an area like a\nslice of pie. Kepler found that equal\nareas are swept in equal times, no\nmatter where the planet is!",
+            "Page 4 - Visualizing the Law\n\nThe fifth green button toggles a\nspecial visualization! When active,\nyou'll see shaded areas that show\nthis Equal Areas Law in action. Even\nthough the planet moves different\ndistances, the swept areas match\nperfectly over equal time periods!",
+            "Page 5 - Why This Happens\n\nGravity causes this beautiful dance!\nWhen planets are closer to the Sun,\nthe Sun's gravity pulls harder,\nmaking them speed up. When they're\nfarther away, gravity is weaker, so\nthey slow down. This creates the\nperfect balance Kepler observed!",
+            "Page 6 - Try It Yourself!\n\nUse the fifth button to toggle the\nvisualization on and off when the\n target planet is the Earth or Venus.\n Try pausing the simulation at different \nmoments to study the areas. Follow different\nplanets to see how they all obey\nthis same universal law. Pretty\namazing, right?"
         ];
 
         this.currentPage = 0; // starting page

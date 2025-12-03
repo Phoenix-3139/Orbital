@@ -13,16 +13,16 @@ export class TextS5 extends Component {
         displayText: Property.string(''),
 
         
-        totalPages: Property.int(3)
+        totalPages: Property.int(4)
     };
 
     start() {
        
         this.pages = [
             "Page 1 - The Earth-Moon Barycenter\n\nThe Earth doesn't orbit the Sun from\na fixed point in its center. Instead,\nthe Earth and Moon orbit around their\ncommon center of mass - a point called\nthe barycenter. This point lies about\n4,700 km from Earth's center, roughly\n1,700 km beneath the surface. Both\nbodies revolve around this point!",
-            "Page 2 — Understanding the Wobble\n\nAs the Earth-Moon system travels\naround the Sun, both objects orbit\ntheir shared barycenter. Because this\npoint is inside Earth but offset from\nits center, Earth follows a slightly\nwavy path through space. The Moon's\ngravitational pull creates this\nconstant wobble in Earth's orbit.",
-            "Page 3 — Why This Happens\n\nGravity works both ways - the Moon\npulls on Earth, and Earth pulls on\nthe Moon with equal force. Since the\nMoon has significant mass (about 1/81\nof Earth's), it's strong enough to\nshift Earth's orbital motion. Both\nobjects dance around their mutual\nbalance point as they orbit the Sun.",
-            "Page 4 — The Orbital Dance\n\nSo Earth's path around the Sun isn't\na smooth ellipse - it's actually a\nwavy, wobbling trajectory! Picture a\nsmooth curve with small ripples in it.\nThat's Earth's true path through the\nsolar system. Right now, as you stand\nhere, you're riding along on this\ncomplex orbital journey through space!"
+            "Page 2 - Understanding the Wobble\n\nAs the Earth-Moon system travels\naround the Sun, both objects orbit\ntheir shared barycenter. Because this\npoint is inside Earth but offset from\nits center, Earth follows a slightly\nwavy path through space. The Moon's\ngravitational pull creates this\nconstant wobble in Earth's orbit.",
+            "Page 3 - Why This Happens\n\nGravity works both ways - the Moon\npulls on Earth, and Earth pulls on\nthe Moon with equal force. Since the\nMoon has significant mass (about 1/81\nof Earth's), it's strong enough to\nshift Earth's orbital motion. Both\nobjects dance around their mutual\nbalance point as they orbit the Sun.",
+            "Page 4 - The Orbital Dance\n\nSo Earth's path around the Sun isn't\na smooth ellipse - it's actually a\nwavy, wobbling trajectory! Picture a\nsmooth curve with small ripples in it.\nThat's Earth's true path through the\nsolar system. Right now, as you stand\nhere, you're riding along on this\ncomplex orbital journey through space!"
         ];
 
         this.currentPage = 0; // starting page
