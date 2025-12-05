@@ -1,6 +1,6 @@
-/**
- * Universal Coordinate System for Solar System Simulation
- * Handles coordinate transformations and camera modes for different viewing perspectives
+/*
+Universal Coordinate System for Solar System Simulation
+Handles coordinate transformations and camera modes for different viewing perspectives
  */
 export class UniversalCoordinateSystem {
     constructor(canvasWidth = 1024, canvasHeight = 1024) {
@@ -14,9 +14,9 @@ export class UniversalCoordinateSystem {
         
         // Fixed scale levels for each mode
         this.scales = {
-            SOLAR_SYSTEM: 1.1e10,    // 11 million km per pixel
-            INNER_PLANETS: 1e9,      // 1 million km per pixel  
-            PLANET: 5e5              // 10,000 km per pixel
+            SOLAR_SYSTEM: 1e10,     // decrease to zoom
+            INNER_PLANETS: 5e8,     
+            PLANET: 1e7
         };
         
         // Planet size multipliers for visibility
@@ -39,63 +39,28 @@ export class UniversalCoordinateSystem {
         };
         
         this.metersPerPixel = this.scales[this.cameraMode];
-        this.smoothTransitions = false;
-        this.transitionSpeed = 0.1;
     }
 
-    /**
-     * Convert world coordinates (meters) to screen coordinates (pixels)
-     */
+    // Convert world coordinates (meters) to screen coordinates (pixels)
     worldToScreen(worldX, worldY) {
         const screenX = (worldX - this.cameraCenter.x) / this.metersPerPixel + this.canvasWidth / 2;
         const screenY = (worldY - this.cameraCenter.y) / this.metersPerPixel + this.canvasHeight / 2;
         return { x: screenX, y: screenY };
     }
 
-    /**
-     * Convert screen coordinates (pixels) to world coordinates (meters)
-     */
+    // Convert screen coordinates (pixels) to world coordinates (meters)
     screenToWorld(screenX, screenY) {
         const worldX = (screenX - this.canvasWidth / 2) * this.metersPerPixel + this.cameraCenter.x;
         const worldY = (screenY - this.canvasHeight / 2) * this.metersPerPixel + this.cameraCenter.y;
         return { x: worldX, y: worldY };
     }
 
-    /**
-     * Get planet size multipliers for current camera mode
-     */
+    // Get planet size multipliers for current camera mode
     getPlanetSizeMultipliers() {
         return this.planetSizeMultipliers[this.cameraMode];
     }
 
-    /**
-     * Calculate scaled radius for display
-     */
-    getScaledRadius(body, useRealScale = true) {
-        if (!useRealScale) {
-            return body.getDisplayRadius();
-        }
-
-        const multipliers = this.getPlanetSizeMultipliers();
-        
-        let worldRadius;
-        if (typeof body.getWorldRadius === 'function') {
-            worldRadius = body.getWorldRadius();
-        } else if (body.radius) {
-            worldRadius = body.radius * 1000;
-        } else {
-            return multipliers.minPixelSize;
-        }
-
-        let scaledRadius = worldRadius * (body.name === 'Sun' ? multipliers.sunMultiplier : multipliers.planetMultiplier);
-        const screenRadius = scaledRadius / this.metersPerPixel;
-        
-        return Math.max(multipliers.minPixelSize, screenRadius);
-    }
-
-    /**
-     * Set camera mode using number
-     */
+    // Set camera mode by number (1: Solar System, 2: Inner Planets, 3: Planet)
     setCameraModeByNumber(modeNumber, targetPlanet = null) {
         const modes = {
             1: 'SOLAR_SYSTEM',
@@ -111,29 +76,11 @@ export class UniversalCoordinateSystem {
         }
     }
 
-    /**
-     * Set target planet for camera tracking
-     */
-    setTarget(planet) {
-        this.targetPlanet = planet;
-        if (planet && planet.position) {
-            this.cameraCenter.x = planet.position.x;
-            this.cameraCenter.y = planet.position.y;
-        }
-    }
-
-    /**
-     * Get current camera mode
-     */
-    getCameraMode() {
-        return this.cameraMode;
-    }
-
-    /**
-     * Set camera mode directly
-     * mode: 'SOLAR_SYSTEM' | 'INNER_PLANETS' | 'PLANET'
-     * targetPlanet: optional object with .position {x,y} (can be null)
-     */
+    /*
+    Set camera mode directly
+    mode: 'SOLAR_SYSTEM' | 'INNER_PLANETS' | 'PLANET'
+    targetPlanet: optional object with .position {x,y} (can be null)
+    */
     setCameraMode(mode, targetPlanet = null) {
         // validate mode
         if (!this.scales.hasOwnProperty(mode)) {
@@ -169,42 +116,29 @@ export class UniversalCoordinateSystem {
                 break;
         }
 
-        // Immediately apply camera update if smoothing disabled
-        if (!this.smoothTransitions) {
-            this.updateCamera();
-        }
+        //Update camera position
+        this.updateCamera();
 
         console.log(`Camera mode set to: ${mode}`);
     }
-    /**
-     * Update camera position
-     */
+    
+    // Update camera position based on current mode and target planet
     updateCamera() {
         if (this.cameraMode === 'PLANET' && 
             this.targetPlanet && this.targetPlanet.position) {
-            if (this.smoothTransitions) {
-                const dx = this.targetPlanet.position.x - this.cameraCenter.x;
-                const dy = this.targetPlanet.position.y - this.cameraCenter.y;
-                this.cameraCenter.x += dx * this.transitionSpeed;
-                this.cameraCenter.y += dy * this.transitionSpeed;
-            } else {
                 this.cameraCenter.x = this.targetPlanet.position.x;
                 this.cameraCenter.y = this.targetPlanet.position.y;
-            }
+            
         }
     }
 
-    /**
-     * Manually set camera position
-     */
+    // Directly set camera position in world coordinates
     setCameraPosition(x, y) {
         this.cameraCenter.x = x;
         this.cameraCenter.y = y;
     }
 
-    /**
-     * Set scale with mode-appropriate limits (updated)
-     */
+    // Set scale (meters per pixel) with limits based on camera mode
     setScale(scale) {
         const limits = {
             SOLAR_SYSTEM: { min: 1e9, max: 1e11 },
@@ -216,60 +150,8 @@ export class UniversalCoordinateSystem {
         this.metersPerPixel = Math.max(limit.min, Math.min(limit.max, scale));
     }
 
-    /**
-     * Zoom by factor
-     */
+    // Zoom in/out by a factor
     zoom(factor) {
         this.setScale(this.metersPerPixel / factor);
-    }
-
-    /**
-     * Get current mode information
-     */
-    getModeInfo() {
-        return {
-            mode: this.cameraMode,
-            scale: this.metersPerPixel,
-            center: { ...this.cameraCenter },
-            targetPlanet: this.targetPlanet ? this.targetPlanet.name : null,
-            planetScaling: this.planetSizeMultipliers[this.cameraMode]
-        };
-    }
-
-    /**
-     * Get visible planets for current mode
-     */
-    getVisiblePlanets(allBodies) {
-        switch (this.cameraMode) {
-            case 'SOLAR_SYSTEM':
-            case 'PLANET':
-                return allBodies;
-            case 'INNER_PLANETS':
-                const innerPlanets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars'];
-                
-                const result = [];
-                for (let i = 0; i < allBodies.length; i++) {
-                    const b = allBodies[i];
-                    if (!b || !b.name) { continue; }
-                    for (let j = 0; j < innerPlanets.length; j++) {
-                        if (innerPlanets[j] === b.name) {
-                            result.push(b);
-                            break;
-                        }
-                    }
-                }
-                return result;
-            default:
-                return allBodies;
-        }
-    }
-
-    /**
-     * Check if object is visible on screen
-     */
-    isVisible(worldX, worldY, margin = 100) {
-        const screenPos = this.worldToScreen(worldX, worldY);
-        return screenPos.x >= -margin && screenPos.x <= this.canvasWidth + margin &&
-               screenPos.y >= -margin && screenPos.y <= this.canvasHeight + margin;
     }
 }

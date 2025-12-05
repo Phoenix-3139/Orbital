@@ -13,15 +13,18 @@ export class Drawer extends Component {
         bgColor: Property.string('#0a0a0a'),
         paused: Property.bool(false),
         timeMultiplier: Property.float(2000000),
-        showOrbits: Property.bool(true),
+        showOrbits: Property.bool(false),
         // maxTrailLength: Property.int(4000), // REMOVED: trail length is now dynamic
-        enablePerturbations: Property.bool(false),
         showOuterPlanets: Property.bool(true),
         useRealScale: Property.bool(true),
-        planetScaleBoost: Property.float(3.0),
+        //Increase for resolution
+        planetScaleBoost: Property.float(6.0),
         cameraMode: Property.int(1),
         targetPlanet: Property.string('Mercury'),
-        minPlanetPixels: Property.float(4.0),
+        drawKeplerEllipse: Property.bool(true),
+        targetPlanetIndex: Property.int(2),
+        //Increase for resolution
+        minPlanetPixels: Property.float(6.0),
     };
 
     start() {
@@ -36,7 +39,8 @@ export class Drawer extends Component {
             var canvasInitOk = false;
             try {
                 if (typeof this.canvasManager.initialize === 'function') {
-                    canvasInitOk = this.canvasManager.initialize();
+                    //Set canvas size parameters
+                    canvasInitOk = this.canvasManager.initialize(1024, 1024);
                 } else {
                     // If initialize isn't present, assume canvasManager created the canvas already
                     canvasInitOk = true;
@@ -86,8 +90,6 @@ export class Drawer extends Component {
             return;
         }
 
-        
-
         try {
             // Update simulation with deltaTime
             this.simulationController.updateSimulation(dt);
@@ -133,10 +135,14 @@ export class Drawer extends Component {
             // Draw UI
             this.renderer.drawUI(
                 this.cameraMode, this.timeMultiplier,
-                this.simulationController.simulationTime, this.targetPlanet,
-                this.useRealScale, this.planetScaleBoost
+                this.simulationController.simulationTime, this.targetPlanet, 2
             );
-            
+
+            if(this.cameraMode === 2 && this.drawKeplerEllipse && (this.targetPlanet == "Venus" || this.targetPlanet =="Earth"))
+            {
+            this.renderer.drawKeplerEllipse(this.simulationController.bodies[this.targetPlanetIndex]);
+            }
+                        
             // Update texture
             this.canvasManager.updateTexture();
             
@@ -145,26 +151,20 @@ export class Drawer extends Component {
         }
     }
 
-    /**
-     * Clean up on destroy
-     */
+    // Cleanup on destroy
     onDestroy() {
         console.log('Cleaning up Orbital Simulation...');
         this.initialized = false;
     }
 
-    /**
-     * Set camera mode (1, 2, 3 only)
-     */
+    // Set camera mode
     setCameraMode(mode) {
         const previousMode = this.cameraMode;
         this.cameraMode = Math.max(1, Math.min(3, mode)); // Clamp between 1-3
         console.log(`Camera mode changed from ${previousMode} to ${this.cameraMode}`);
     }
 
-    /**
-     * Set target planet
-     */
+    // Set target planet by name
     setTargetPlanet(planetName) {
         const previousPlanet = this.targetPlanet;
         this.targetPlanet = planetName;

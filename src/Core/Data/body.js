@@ -1,6 +1,6 @@
-/**
- * Celestial Body Class for Solar System Simulation
- * Contains physical properties, orbital mechanics data
+/*
+Celestial Body Class for Solar System Simulation
+Contains physical properties, orbital mechanics data
  */
 
 export class Body {

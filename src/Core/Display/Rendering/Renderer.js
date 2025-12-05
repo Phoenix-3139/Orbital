@@ -1,7 +1,6 @@
-/**
- * Unified Renderer - All rendering in one place
- * Handles planets, trails, labels, UI, and grid
-
+/*
+Unified Renderer - All rendering in one place
+Handles planets, trails, labels, UI, and grid
  */
 export class Renderer {
     constructor(canvasManager, coordSystem) {
@@ -24,20 +23,16 @@ export class Renderer {
     //MARK: PLANET RENDERING
 
     drawPlanet(body, cameraMode, useRealScale, minSize, scaleBoost) {
+
         if (body.isBarycenter && cameraMode !== 3) {
             return;
         }
 
         const screenPos = this.coordSystem.worldToScreen(body.position.x, body.position.y);
         
-        if (body.isBarycenter) {
-            this.drawBarycenterMarker(screenPos);
-            return;
-        }
-
         const radius = this.calculateRadius(body, cameraMode, useRealScale, minSize, scaleBoost);
 
-        if (body.spritePath) {
+        if (body.spritePath && body.isBarycenter !== true) {
             if (!(body.name === "Moon" && (cameraMode === 1||cameraMode === 2))) {
                 this.drawPlanetSprite(body, screenPos, radius);
             }
@@ -52,6 +47,8 @@ export class Renderer {
 
     drawPlanetSprite(body, screenPos, radius) 
     {
+        if(body.spritePath && body.name !== "Earth-Moon Barycenter")
+        {
         const key = body.spritePath; //path to the sprite
         
         if (this.spriteCache[key]) //if the sprite is cached
@@ -66,12 +63,6 @@ export class Renderer {
         };
         img.src = key; // sets the source of the image
     }
-
-    drawBarycenterMarker(screenPos) {
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        this.ctx.beginPath();
-        this.ctx.arc(screenPos.x, screenPos.y, 2, 0, Math.PI * 2);
-        this.ctx.fill();
     }
 
     calculateRadius(body, cameraMode, useRealScale, minSize, scaleBoost) {
@@ -180,26 +171,38 @@ export class Renderer {
     
     // //MARK: UI RENDERING
 
-    drawUI(cameraMode, timeMultiplier, simulationTime, targetPlanet, useRealScale, planetScaleBoost) {
+    drawUI(cameraMode, timeMultiplier, simulationTime, targetPlanet, size = 1.0) {
+        // Define base sizes and scale them by the size parameter
+        const baseFontSize = 13;
+        const baseLineHeight = 18;
+        const baseSectionSpacing = 22;
+        const baseMargin = 10;
+
+        const fontSize = baseFontSize * size;
+        const lineHeight = baseLineHeight * size;
+        const sectionSpacing = baseSectionSpacing * size;
+        const margin = baseMargin * size;
+
         this.ctx.fillStyle = 'white';
-        this.ctx.font = '13px Arial';
+        this.ctx.font = `${fontSize}px Arial`;
         this.ctx.textAlign = 'left';
 
-        const x = 10;
-        let y = 20;
+        const x = margin;
+        let y = margin + (fontSize / 2); // Start y position adjusted for font size
 
         // Short time display
         const days = Math.round(simulationTime / 86400);
         const years = days / 365.25;
         const timeText = years >= 1 ? `${years.toFixed(2)} years` : `${days} days`;
-        this.ctx.fillText(`Speed: ${Math.round(timeMultiplier)}x`, x, y); y += 18;
-        this.ctx.fillText(`Elapsed: ${timeText}`, x, y); y += 22;
+        this.ctx.fillText(`Speed: ${Math.round(timeMultiplier)}x`, x, y); y += lineHeight;
+        this.ctx.fillText(`Elapsed: ${timeText}`, x, y); y += sectionSpacing;
 
-        if (targetPlanet) {
+        if (targetPlanet && typeof targetPlanet === 'string') {
             // Kid-friendly one-line facts
             const facts = 
             {
                 'sun': {line: 'A huge, hot star that lights our solar system.', size: 'Huge'},
+                'earth-moon barycenter': {line: 'The center of mass between Earth and the Moon.', size: 'Imaginary Point'},
                 'mercury': {line: 'Tiny and speedy, very close to the Sun.', size: 'Tiny'},
                 'venus': {line: 'Cloudy and bright with a very hot surface.', size: 'Small'},
                 'earth': {line: 'Our home — the only planet known with life.', size: 'Medium'},
@@ -214,20 +217,70 @@ export class Renderer {
 
             // Title
             this.ctx.fillStyle = '#ffeb3b';
-            this.ctx.fillText(targetPlanet, x, y); y += 18;
+            this.ctx.fillText(targetPlanet, x, y); y += lineHeight;
 
             // Fact and simple stats
             this.ctx.fillStyle = 'white';
-            this.ctx.fillText(info.line, x, y); y += 18;
-            this.ctx.fillText(`Size: ${info.size}`, x, y); y += 18;
+            this.ctx.fillText(info.line, x, y); y += lineHeight;
+            this.ctx.fillText(`Size: ${info.size}`, x, y); y += lineHeight;
             // Simple hint
             this.ctx.fillStyle = 'rgba(255,255,255,0.85)';
         } else {
             // Short guidance for kids
-            this.ctx.fillText('Pick a planet to see a fun fact!', x, y); y += 18;
-            this.ctx.fillText('Modes: 1 Solar System • 2 Inner Planets • 3 Planet Focus', x, y); y += 18;
+            this.ctx.fillText('Pick a planet to see a fun fact!', x, y); y += lineHeight;
+            this.ctx.fillText('Modes: 1 Solar System • 2 Inner Planets • 3 Planet Focus', x, y); y += lineHeight;
             this.ctx.fillText(`Current view: ${cameraMode}`, x, y);
         }
+    }
+
+    drawKeplerEllipse(planetData) {
+        // Add a check to prevent crash if planetData or its orbit is missing
+        if (!planetData || !planetData.orbit) {
+            return; // Exit the function if data is not valid
+        }
+
+        const ctx = this.ctx;
+
+        const a = planetData.orbit.semiMajorAxis;       // meters
+        const e = planetData.orbit.eccentricity;
+        const b = a * Math.sqrt(1 - e*e);
+
+        const rx = a / this.coordSystem.metersPerPixel;
+        const ry = b / this.coordSystem.metersPerPixel;
+
+        const cx = this.canvas.width/2;
+        const cy = this.canvas.height/2;
+
+        ctx.save();
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+
+        // draw ellipse
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+        ctx.stroke();
+
+        // shaded 60° slice
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI/3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, Math.PI + Math.PI/3);
+        ctx.closePath();
+        ctx.fill();
+        
+        // CHANGE: Scale text size based on canvas resolution
+        const fontSize = Math.round(22 * (this.canvas.width / 1024));
+        ctx.fillStyle = "#fff";
+        ctx.font = `${fontSize}px Arial`;
+        ctx.fillText("This is a representation of Kepler's 2nd Law:", 540, 40);
+        ctx.fillText("Equal areas in equal times.", 540, 40 + fontSize + 4);
+
+        ctx.restore();
     }
 }
 // renderer

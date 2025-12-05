@@ -18,7 +18,6 @@ Define class Drawer extends Component
         paused: Property.bool(false)
         timeMultiplier: Property.float(2000000)
         showOrbits: Property.bool(true)
-        enablePerturbations: Property.bool(false)
         showOuterPlanets: Property.bool(true)
         useRealScale: Property.bool(true)
         planetScaleBoost: Property.float(3.0)
